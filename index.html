@@ -1,174 +1,778 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PriceMonitor – Qiymət Müqayisəsi</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-/* NAV */
-nav{background:#fff;border-bottom:1px solid #e8e8e4;position:sticky;top:0;z-index:200;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
-.nav-logo{display:flex;align-items:center;gap:10px;font-size:1.1rem;font-weight:800;color:#1a1a1a;text-decoration:none}
-.nav-logo-icon{width:36px;height:36px;background:#4caf50;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
-.nav-tabs{display:flex;gap:6px}
-.nav-tab{padding:8px 18px;border-radius:8px;font-weight:600;font-size:.88rem;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#666;transition:all .18s;font-family:'Inter',sans-serif}
-.nav-tab.active{background:#4caf50;color:#fff;border-color:#4caf50}
-.nav-tab:hover:not(.active){border-color:#4caf50;color:#2e7d32}
+  <title>Araz Rəqib Analizi</title>
 
-/* HERO */
-.hero{background:linear-gradient(160deg,#fdfcf5 0%,#f5f5e8 100%);padding:52px 32px 44px;text-align:center;border-bottom:1px solid #e8e8e0}
-.hero h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;color:#1a1a1a;margin-bottom:10px;letter-spacing:-.03em}
-.hero p{color:#888;font-size:.97rem;font-weight:500;margin-bottom:32px}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-/* SEARCH CARD */
-.search-card{background:#fff;border-radius:16px;padding:24px;max-width:780px;margin:0 auto;box-shadow:0 2px 16px rgba(0,0,0,.06);border:1.5px solid #ebebeb}
-.search-top{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.store-select{padding:10px 16px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:.9rem;font-family:'Inter',sans-serif;font-weight:600;color:#1a1a1a;background:#fff;cursor:pointer;outline:none;min-width:160px;transition:border-color .18s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.store-select:focus{border-color:#4caf50}
-.analyze-btn{padding:10px 22px;background:#FF8300;border:none;border-radius:10px;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:7px;transition:all .18s;white-space:nowrap}
-.analyze-btn:hover{background:#e07400;transform:translateY(-1px)}
-.stats-info{margin-left:auto;font-size:.88rem;font-weight:600;color:#888;display:flex;align-items:center;gap:12px}
-.stats-info span.count{color:#4caf50;font-weight:800}
-.excel-btn-sm{display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;color:#666;transition:all .18s;font-family:'Inter',sans-serif;white-space:nowrap}
-.excel-btn-sm:hover{border-color:#4caf50;color:#2e7d32}
-.search-input{width:100%;padding:12px 16px 12px 40px;border:1.5px solid #e8e8e4;border-radius:10px;font-size:.92rem;font-family:'Inter',sans-serif;font-weight:500;outline:none;transition:border-color .18s,box-shadow .18s;background:#fafafa;color:#1a1a1a;position:relative}
-.search-input:focus{border-color:#4caf50;background:#fff;box-shadow:0 0 0 3px rgba(76,175,80,.1)}
-.search-wrap{position:relative}
-.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#bbb;pointer-events:none}
+  <style>
+    :root {
+      --araz-orange: #FD6A02;
+      --araz-orange-dark: #E25E00;
+      --araz-orange-soft: #FFF3EA;
 
-/* PRODUCT TABS (filter row) */
-.filter-row{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
-.filter-btn{padding:9px 18px;border-radius:24px;font-weight:600;font-size:.85rem;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#666;transition:all .18s;font-family:'Inter',sans-serif}
-.filter-btn.active{background:#4caf50;color:#fff;border-color:#4caf50}
-.filter-btn:hover:not(.active){border-color:#4caf50;color:#2e7d32;background:#f0faf0}
+      --araz-green: #82C537;
+      --araz-green-dark: #5FA923;
+      --araz-green-soft: #F3FAEA;
 
-/* MAIN */
-.main{max-width:960px;margin:0 auto;padding:28px 24px 60px}
+      --bg: #FFFDF8;
+      --card: #FFFFFF;
+      --border: #ECE7DF;
+      --text: #1F2937;
+      --muted: #7B8190;
+      --shadow: 0 8px 24px rgba(31, 41, 55, 0.08);
+    }
 
-/* PRODUCT LIST ITEMS (for Məhsul tab) */
-.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.result-title{font-size:1rem;font-weight:800;color:#1a1a1a;display:flex;align-items:center;gap:8px}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-/* Product comparison card */
-.prod-card{background:#fff;border-radius:14px;padding:18px 22px;margin-bottom:10px;border:1.5px solid #ebebeb;box-shadow:0 1px 6px rgba(0,0,0,.04);transition:box-shadow .18s,transform .18s}
-.prod-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.09);transform:translateY(-1px)}
-.prod-card-name{font-size:.95rem;font-weight:700;color:#1a1a1a;margin-bottom:14px}
-.stores-row{display:flex;gap:8px;flex-wrap:wrap}
-.store-pill{flex:1;min-width:100px;max-width:185px;border-radius:12px;padding:11px 12px;border:1.5px solid #ebebeb;background:#fafafa;position:relative;text-align:center;transition:all .18s;display:flex;flex-direction:column;justify-content:flex-start}
-.store-pill.cheapest{border-color:#4caf50;background:#f1faf2}
-.store-pill.priciest{border-color:#FF8300;background:#fff8f0}
-.store-pill.no-data{opacity:.5}
-.store-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.04em}
-.badge-cheap{background:#4caf50;color:#fff}
-.badge-dear{background:#FF8300;color:#fff}
-.sp-name{font-size:.68rem;font-weight:800;letter-spacing:.07em;color:#aaa;text-transform:uppercase;margin-bottom:5px}
-.sp-product-name{font-size:.78rem;color:#555;line-height:1.22;min-height:34px;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;hyphens:auto}
-.store-pill.cheapest .sp-name{color:#2e7d32}
-.sp-price{font-size:1.05rem;font-weight:800;color:#1a1a1a}
-.sp-price.dash{color:#ccc;font-size:1.2rem}
-.sp-diff{font-size:.75rem;font-weight:700;margin-top:2px}
-.diff-neg{color:#2e7d32}
-.diff-pos{color:#FF8300}
+    body {
+      font-family: "Inter", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(253, 106, 2, 0.08), transparent 32%),
+        radial-gradient(circle at top right, rgba(130, 197, 55, 0.10), transparent 34%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
 
-/* STORE SEARCH TAB - list style like screenshot */
-.store-search-card{background:#fff;border-radius:16px;padding:24px;max-width:960px;margin:0 auto 0;box-shadow:0 2px 16px rgba(0,0,0,.06);border:1.5px solid #ebebeb}
-.store-list-item{background:#fff;border-radius:12px;padding:0 22px;margin-bottom:8px;border:1.5px solid #ebebeb;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:space-between;min-height:68px;transition:box-shadow .18s,transform .15s}
-.store-list-item:hover{box-shadow:0 4px 18px rgba(0,0,0,.09);transform:translateY(-1px)}
-.sli-name{font-size:.95rem;font-weight:700;color:#1a1a1a;flex:1}
-.sli-store{font-size:.78rem;font-weight:700;letter-spacing:.07em;color:#888;text-transform:uppercase;margin-right:24px;min-width:80px;text-align:right}
-.sli-prices{display:flex;align-items:center;gap:8px}
-.sli-old-price{font-size:.82rem;font-weight:600;color:#bbb;text-decoration:line-through}
-.sli-new-price{font-size:1.05rem;font-weight:800;color:#4caf50;background:#f1faf2;border:1.5px solid #c8eacb;border-radius:8px;padding:6px 14px;min-width:90px;text-align:center}
-.sli-only-price{font-size:1.05rem;font-weight:800;color:#1a1a1a;background:#f5f5f5;border:1.5px solid #e0e0e0;border-radius:8px;padding:6px 14px;min-width:90px;text-align:center}
+    nav {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 28px;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 16px rgba(0,0,0,.045);
+    }
 
-/* Load more */
-.load-more-wrap{text-align:center;margin-top:20px}
-.load-more-btn{padding:12px 36px;background:#fff;border:1.5px solid #4caf50;border-radius:10px;font-weight:700;font-size:.9rem;color:#2e7d32;cursor:pointer;font-family:'Inter',sans-serif;transition:all .18s}
-.load-more-btn:hover{background:#4caf50;color:#fff}
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
 
-/* Empty state */
-.empty{text-align:center;padding:56px 20px;color:#aaa}
-.empty-icon{font-size:2.8rem;margin-bottom:12px}
-.empty h3{font-size:1rem;font-weight:800;margin-bottom:6px;color:#888}
+    .nav-logo img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    }
 
-/* Tabs */
-.tab-content{display:none}
-.tab-content.active{display:block}
+    .nav-logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
 
-/* Stats bar */
-.stats-bar{font-size:.85rem;color:#aaa;font-weight:600;margin-top:10px}
-.stats-bar b{color:#4caf50;font-weight:800}
+    .nav-logo-title {
+      font-size: 1.08rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: var(--araz-orange);
+    }
 
-@media(max-width:640px){
-  nav{padding:0 16px}
-  .hero{padding:36px 16px 32px}
-  .search-card,.store-search-card{padding:16px}
-  .main{padding:20px 12px 40px}
-  .sli-store{display:none}
-  .store-pill{min-width:80px}
-  .search-top{flex-direction:column;align-items:stretch}
-  .stats-info{margin-left:0}
-}
-</style>
+    .nav-logo-sub {
+      margin-top: 4px;
+      font-size: .74rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: .86rem;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: #666;
+      transition: all .18s ease;
+      font-family: inherit;
+    }
+
+    .nav-tab.active {
+      background: linear-gradient(135deg, var(--araz-orange), #ff8a22);
+      color: #fff;
+      border-color: var(--araz-orange);
+      box-shadow: 0 6px 16px rgba(253, 106, 2, .24);
+    }
+
+    .nav-tab:hover:not(.active) {
+      border-color: var(--araz-orange);
+      color: var(--araz-orange);
+      background: var(--araz-orange-soft);
+    }
+
+    .hero {
+      padding: 56px 28px 42px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background:
+        linear-gradient(160deg, rgba(255,255,255,.62), rgba(255,247,239,.72)),
+        radial-gradient(circle at 50% 0%, rgba(130,197,55,.16), transparent 42%);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      border: 1.5px solid #ffd9c2;
+      color: var(--araz-orange);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: .78rem;
+      margin-bottom: 16px;
+      box-shadow: 0 3px 12px rgba(253,106,2,.08);
+    }
+
+    .hero h1 {
+      font-size: clamp(1.9rem, 4vw, 3rem);
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.045em;
+    }
+
+    .hero h1 span {
+      color: var(--araz-orange);
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: .98rem;
+      font-weight: 600;
+      margin-bottom: 30px;
+    }
+
+    .search-card,
+    .store-search-card {
+      background: rgba(255,255,255,.96);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 850px;
+      margin: 0 auto;
+      box-shadow: var(--shadow);
+      border: 1.5px solid var(--border);
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #bbb;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 13px 16px 13px 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: .94rem;
+      font-family: inherit;
+      font-weight: 600;
+      outline: none;
+      transition: border-color .18s, box-shadow .18s, background .18s;
+      background: #fffdfb;
+      color: var(--text);
+    }
+
+    .search-input:focus {
+      border-color: var(--araz-orange);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(253, 106, 2, .10);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filter-btn {
+      padding: 9px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: .84rem;
+      cursor: pointer;
+      border: 1.5px solid #f4d2bd;
+      background: #fff;
+      color: var(--araz-orange);
+      transition: all .18s;
+      font-family: inherit;
+    }
+
+    .filter-btn.active {
+      background: var(--araz-orange);
+      color: #fff;
+      border-color: var(--araz-orange);
+      box-shadow: 0 6px 14px rgba(253,106,2,.20);
+    }
+
+    .filter-btn:hover:not(.active) {
+      background: var(--araz-orange-soft);
+      transform: translateY(-1px);
+    }
+
+    .stats-bar {
+      background: linear-gradient(135deg, var(--araz-orange-soft), #fff);
+      border: 1.5px solid #ffd9c2;
+      color: #82400C;
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-size: .86rem;
+      font-weight: 700;
+    }
+
+    .stats-bar b {
+      color: var(--araz-orange);
+      font-weight: 900;
+    }
+
+    .main {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 30px 24px 70px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .result-title {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .excel-btn-sm {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 15px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: .83rem;
+      cursor: pointer;
+      color: var(--araz-green-dark);
+      transition: all .18s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .excel-btn-sm:hover {
+      border-color: var(--araz-green);
+      background: var(--araz-green-soft);
+      transform: translateY(-1px);
+    }
+
+    .prod-card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 18px 22px;
+      margin-bottom: 12px;
+      border: 1.5px solid var(--border);
+      border-left: 5px solid var(--araz-orange);
+      box-shadow: 0 2px 10px rgba(0,0,0,.045);
+      transition: box-shadow .18s, transform .18s;
+    }
+
+    .prod-card:hover {
+      box-shadow: 0 10px 28px rgba(0,0,0,.09);
+      transform: translateY(-2px);
+    }
+
+    .prod-card-name {
+      font-size: .98rem;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 15px;
+      line-height: 1.35;
+    }
+
+    .stores-row {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .store-pill {
+      flex: 1;
+      min-width: 108px;
+      max-width: 190px;
+      border-radius: 15px;
+      padding: 12px 12px;
+      border: 1.5px solid var(--border);
+      background: #FAFAF8;
+      position: relative;
+      text-align: center;
+      transition: all .18s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .store-pill.cheapest {
+      border-color: var(--araz-green);
+      background: var(--araz-green-soft);
+      box-shadow: inset 0 0 0 1px rgba(130,197,55,.25);
+    }
+
+    .store-pill.priciest {
+      border-color: var(--araz-orange);
+      background: var(--araz-orange-soft);
+    }
+
+    .store-pill.no-data {
+      opacity: .45;
+    }
+
+    .store-badge {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: .62rem;
+      font-weight: 900;
+      padding: 3px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+      letter-spacing: .04em;
+    }
+
+    .badge-cheap {
+      background: var(--araz-green);
+      color: #fff;
+    }
+
+    .badge-dear {
+      background: var(--araz-orange);
+      color: #fff;
+    }
+
+    .sp-name {
+      font-size: .68rem;
+      font-weight: 900;
+      letter-spacing: .07em;
+      color: #aaa;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .store-pill.cheapest .sp-name {
+      color: var(--araz-green-dark);
+    }
+
+    .store-pill.priciest .sp-name {
+      color: var(--araz-orange-dark);
+    }
+
+    .sp-product-name {
+      font-size: .78rem;
+      color: #555;
+      line-height: 1.25;
+      min-height: 36px;
+      margin-bottom: 9px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .sp-price {
+      font-size: 1.08rem;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .store-pill.cheapest .sp-price {
+      color: var(--araz-green-dark);
+    }
+
+    .store-pill.priciest .sp-price {
+      color: var(--araz-orange-dark);
+    }
+
+    .sp-price.dash {
+      color: #ccc;
+      font-size: 1.2rem;
+    }
+
+    .sp-diff {
+      font-size: .75rem;
+      font-weight: 900;
+      margin-top: 3px;
+    }
+
+    .diff-neg {
+      color: var(--araz-green-dark);
+    }
+
+    .diff-pos {
+      color: var(--araz-orange-dark);
+    }
+
+    .load-more-wrap {
+      text-align: center;
+      margin-top: 22px;
+    }
+
+    .load-more-btn {
+      padding: 12px 36px;
+      background: #fff;
+      border: 1.5px solid var(--araz-orange);
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: .9rem;
+      color: var(--araz-orange);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .18s;
+    }
+
+    .load-more-btn:hover {
+      background: var(--araz-orange);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 56px 20px;
+      color: #aaa;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .empty-icon {
+      font-size: 2.6rem;
+      margin-bottom: 12px;
+    }
+
+    .empty h3 {
+      font-size: 1rem;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: #888;
+    }
+
+    .search-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .store-select {
+      padding: 11px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: .9rem;
+      font-family: inherit;
+      font-weight: 800;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+      min-width: 170px;
+    }
+
+    .store-select:focus {
+      border-color: var(--araz-orange);
+      box-shadow: 0 0 0 4px rgba(253,106,2,.10);
+    }
+
+    .analyze-btn {
+      padding: 11px 22px;
+      background: linear-gradient(135deg, var(--araz-orange), #ff8a22);
+      border: none;
+      border-radius: 14px;
+      color: #fff;
+      font-weight: 900;
+      font-size: .9rem;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .18s;
+      white-space: nowrap;
+      box-shadow: 0 7px 17px rgba(253,106,2,.20);
+    }
+
+    .analyze-btn:hover {
+      background: var(--araz-orange-dark);
+      transform: translateY(-1px);
+    }
+
+    .stats-info {
+      margin-left: auto;
+      font-size: .88rem;
+      font-weight: 800;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stats-info span.count {
+      color: var(--araz-green-dark);
+      font-weight: 900;
+    }
+
+    .store-list-item {
+      background: #fff;
+      border-radius: 16px;
+      padding: 0 22px;
+      margin-bottom: 10px;
+      border: 1.5px solid var(--border);
+      border-left: 5px solid var(--araz-green);
+      box-shadow: 0 2px 10px rgba(0,0,0,.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      transition: box-shadow .18s, transform .15s;
+      gap: 14px;
+    }
+
+    .store-list-item:hover {
+      box-shadow: 0 10px 24px rgba(0,0,0,.09);
+      transform: translateY(-1px);
+    }
+
+    .sli-name {
+      font-size: .95rem;
+      font-weight: 900;
+      color: var(--text);
+      flex: 1;
+      line-height: 1.35;
+    }
+
+    .sli-store {
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .07em;
+      color: var(--araz-orange);
+      text-transform: uppercase;
+      min-width: 95px;
+      text-align: right;
+    }
+
+    .sli-prices {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sli-old-price {
+      font-size: .82rem;
+      font-weight: 700;
+      color: #aaa;
+      text-decoration: line-through;
+    }
+
+    .sli-new-price,
+    .sli-only-price {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--araz-green-dark);
+      background: var(--araz-green-soft);
+      border: 1.5px solid #cbeeb8;
+      border-radius: 10px;
+      padding: 7px 14px;
+      min-width: 94px;
+      text-align: center;
+    }
+
+    @media(max-width: 720px) {
+      nav {
+        padding: 12px 16px;
+        align-items: flex-start;
+        gap: 12px;
+        flex-direction: column;
+      }
+
+      .nav-tabs {
+        width: 100%;
+      }
+
+      .nav-tab {
+        flex: 1;
+      }
+
+      .hero {
+        padding: 34px 14px 28px;
+      }
+
+      .search-card,
+      .store-search-card {
+        padding: 16px;
+      }
+
+      .main {
+        padding: 20px 12px 42px;
+      }
+
+      .search-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .stats-info {
+        margin-left: 0;
+      }
+
+      .store-pill {
+        min-width: 88px;
+      }
+
+      .sli-store {
+        display: none;
+      }
+
+      .store-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
 <nav>
   <a class="nav-logo" href="#">
-    <div class="nav-logo-icon">📊</div>
-    PriceMonitor
+    <img src="./araz-logo.png" alt="Araz logo">
+    <div class="nav-logo-text">
+      <div class="nav-logo-title">Araz Rəqib Analizi</div>
+      <div class="nav-logo-sub">Qiymət monitorinqi</div>
+    </div>
   </a>
+
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('products',this)">Məhsul Qiymətləri</button>
-    <button class="nav-tab" onclick="switchTab('stores',this)">Mağaza Axtarışı</button>
+    <button class="nav-tab active" onclick="switchTab('products', this)">Məhsul Qiymətləri</button>
+    <button class="nav-tab" onclick="switchTab('stores', this)">Mağaza Axtarışı</button>
   </div>
 </nav>
 
-<!-- TAB 1: Məhsul Qiymətləri -->
 <div id="tab-products" class="tab-content active">
   <div class="hero">
-    <h1>Qiymət Müqayisəsi</h1>
-    <p>Məhsul adı daxil edərək bütün mağazalardakı qiymətləri müqayisə edin</p>
+    <div class="hero-badge">Araz Market · Rəqib Analizi</div>
+    <h1><span>Qiymət</span> Müqayisəsi</h1>
+    <p>Məhsul adı daxil edərək rəqib mağazalardakı qiymətləri müqayisə edin</p>
+
     <div class="search-card">
       <div class="search-wrap" style="margin-bottom:14px">
-        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="search-input" type="text" id="searchInput" placeholder="Məsələn: spagetti, çörək, süd..." oninput="onSearch(this.value)">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+
+        <input
+          class="search-input"
+          type="text"
+          id="searchInput"
+          placeholder="Məsələn: spagetti, çörək, süd..."
+          oninput="onSearch(this.value)"
+        >
       </div>
+
       <div class="filter-row">
-        <button class="filter-btn active" onclick="setFilter('all',this)">Hamısı</button>
-        <button class="filter-btn" onclick="setFilter('cheaper',this)">↘ Arazda ucuz</button>
-        <button class="filter-btn" onclick="setFilter('pricier',this)">↗ Arazda baha</button>
-        <button class="filter-btn" onclick="setFilter('only-araz',this)">Yalnız Arazda</button>
+        <button class="filter-btn active" onclick="setFilter('all', this)">Hamısı</button>
+        <button class="filter-btn" onclick="setFilter('cheaper', this)">↘ Arazda ucuz</button>
+        <button class="filter-btn" onclick="setFilter('pricier', this)">↗ Arazda baha</button>
+        <button class="filter-btn" onclick="setFilter('only-araz', this)">Yalnız Arazda</button>
       </div>
-      <div class="stats-bar" id="statsBar"></div>
+
+      <div class="stats-bar" id="statsBar">Data yüklənir...</div>
     </div>
   </div>
+
   <div class="main">
     <div class="result-header">
       <div class="result-title">
         <span id="resultsTitleTxt">Nəticələr</span>
       </div>
+
       <button class="excel-btn-sm" onclick="downloadExcel('prod')">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Excel
       </button>
     </div>
+
     <div id="productList"></div>
+
     <div class="load-more-wrap" id="prodLoadMore" style="display:none">
       <button class="load-more-btn" onclick="prodMore()">Daha çox göstər</button>
     </div>
   </div>
 </div>
 
-<!-- TAB 2: Mağaza Axtarışı -->
 <div id="tab-stores" class="tab-content">
   <div class="hero">
-    <h1>Mağaza Məhsul Axtarışı</h1>
-    <p>Seçilmiş mağazada məhsul axtarın</p>
+    <div class="hero-badge">Araz Market · Mağaza üzrə baxış</div>
+    <h1><span>Mağaza</span> Məhsul Axtarışı</h1>
+    <p>Seçilmiş mağazada məhsul axtarın və qiymətləri izləyin</p>
+
     <div class="store-search-card">
       <div class="search-top">
         <select class="store-select" id="storeSelect" onchange="onStoreChange()">
@@ -180,26 +784,38 @@ nav{background:#fff;border-bottom:1px solid #e8e8e4;position:sticky;top:0;z-inde
           <option value="BAZARSTORE">Bazarstore</option>
           <option value="WOLTMARKET">Woltmarket</option>
         </select>
-        <button class="analyze-btn" onclick="analyzeStore()">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          Kataloqnu Analiz Et
-        </button>
+
+        <button class="analyze-btn" onclick="analyzeStore()">Kataloqnu Analiz Et</button>
+
         <div class="stats-info">
           <span><span class="count" id="storeCount">0</span> məhsul yükləndi</span>
+
           <button class="excel-btn-sm" onclick="downloadExcel('store')">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Excel
           </button>
         </div>
       </div>
+
       <div class="search-wrap">
-        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="search-input" type="text" id="storeSearchInput" placeholder="Məhsul adı ilə axtarın..." oninput="onStoreSearch(this.value)">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+
+        <input
+          class="search-input"
+          type="text"
+          id="storeSearchInput"
+          placeholder="Məhsul adı ilə axtarın..."
+          oninput="onStoreSearch(this.value)"
+        >
       </div>
     </div>
   </div>
+
   <div class="main">
     <div id="storeList"></div>
+
     <div class="load-more-wrap" id="storeLoadMore" style="display:none">
       <button class="load-more-btn" onclick="storeMore()">Daha çox göstər</button>
     </div>
@@ -208,491 +824,386 @@ nav{background:#fff;border-bottom:1px solid #e8e8e4;position:sticky;top:0;z-inde
 
 <script>
 /*
-  PriceMonitor live version
-  Data source: Google Sheets gviz JSONP
-  Spreadsheet: Market Prices
+  Burada sən öz mövcud ALL datasını saxlamalısan.
+  Sənin əvvəlki faylında const ALL = [...] çox böyük idi.
+  Onu olduğu kimi bu hissəyə yapışdır.
 */
-const SPREADSHEET_ID = '1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU';
+const ALL = [
+  /*
+    NÜMUNƏ:
+    {
+      name: "Banan kq",
+      araz: 3.39,
+      stores: {
+        BRAVO: { name: "Banan kq", price: 3.29, diff: "-2.9%" },
+        BAZARSTORE: { name: "BANAN KQ", price: 3.39, diff: "0.0%" },
+        WOLTMARKET: { name: "Banan kq", price: 3.39, diff: "0.0%" }
+      }
+    }
+  */
+];
 
-const SHEET_NAMES = {
-  PRICE_COMPARISON: 'PriceComparison',
-  ARAZ: 'Arazmarket',
-  BRAVO: 'Bravo',
-  TAMSTORE: 'Tamstore',
-  RAHATMARKET: 'Rahatmarket',
-  BAZARSTORE: 'Bazarstore',
-  WOLTMARKET: 'WoltMarket'
-};
+const STORES_ALL = ["ARAZ", "BRAVO", "TAMSTORE", "RAHATMARKET", "BAZARSTORE", "WOLTMARKET"];
 
-const STORES_ALL = ['ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET'];
 const STORE_LABELS = {
-  ARAZ: 'ARAZ',
-  BRAVO: 'BRAVO',
-  TAMSTORE: 'TAMSTORE',
-  RAHATMARKET: 'RAHAT',
-  BAZARSTORE: 'BAZARSTORE',
-  WOLTMARKET: 'WOLT'
+  ARAZ: "ARAZ",
+  BRAVO: "BRAVO",
+  TAMSTORE: "TAMSTORE",
+  RAHATMARKET: "RAHAT",
+  BAZARSTORE: "BAZARSTORE",
+  WOLTMARKET: "WOLT"
 };
+
 const PAGE = 30;
 
-let ALL = [];
-let STORE_ROWS = [];
-let SHEET_DEBUG = [];
+let productFiltered = [];
+let productShown = PAGE;
+let productSearch = "";
+let activeFilter = "all";
 
-// ---- utility ----
-function norm(v){
-  return String(v || '')
-    .toLowerCase()
-    .trim()
-    .replaceAll('ə','e')
-    .replaceAll('ı','i')
-    .replaceAll('ö','o')
-    .replaceAll('ü','u')
-    .replaceAll('ğ','g')
-    .replaceAll('ç','c')
-    .replaceAll('ş','s')
-    .replace(/[^a-z0-9]+/g, '');
-}
-function cleanText(v){ return String(v ?? '').trim(); }
-function toNumber(v){
-  if (typeof v === 'number') return v;
-  if (v === null || v === undefined || v === '') return null;
-  const s = String(v).replace('₼','').replace(/\s/g,'').replace(',', '.').replace(/[^0-9.\-]/g,'');
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-function formatPrice(v){
-  const n = toNumber(v);
-  return n === null ? '–' : n.toFixed(2) + ' ₼';
-}
-function calcDiff(araz, other){
-  const a = toNumber(araz), o = toNumber(other);
-  if (a === null || o === null || a === 0) return '';
-  const pct = ((o - a) / a) * 100;
-  const rounded = Math.round(pct * 10) / 10;
-  return (rounded > 0 ? '+' : '') + rounded.toFixed(1) + '%';
-}
-function escapeHTML(value){
-  return String(value ?? '')
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
-}
-function setStatus(msg){
-  const el = document.getElementById('statsBar');
-  if (el) el.innerHTML = msg;
-}
-function showProductMessage(icon, title, body){
-  document.getElementById('productList').innerHTML = `<div class="empty"><div class="empty-icon">${icon}</div><h3>${title}</h3><p>${body || ''}</p></div>`;
-  document.getElementById('prodLoadMore').style.display = 'none';
+let storeProducts = [];
+let storeFiltered = [];
+let storeShown = PAGE;
+let storeSearch = "";
+let activeStore = "ALL";
+
+function init() {
+  productFiltered = [...ALL];
+  buildStoreProducts();
+  renderProducts();
+  renderStoreProducts();
+  updateStats();
 }
 
-// ---- Google Sheet JSONP loader ----
-function loadSheet(sheetName){
-  return new Promise((resolve, reject) => {
-    const callbackName = 'pmSheetCb_' + Math.random().toString(36).slice(2) + Date.now();
-    const script = document.createElement('script');
-    const url = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID +
-      '/gviz/tq?sheet=' + encodeURIComponent(sheetName) +
-      '&tqx=out:json;responseHandler:' + callbackName +
-      '&tq=' + encodeURIComponent('select *') +
-      '&_=' + Date.now();
+function switchTab(tab, button) {
+  document.querySelectorAll(".nav-tab").forEach(btn => btn.classList.remove("active"));
+  button.classList.add("active");
 
-    window[callbackName] = function(response){
-      try {
-        delete window[callbackName];
-        script.remove();
-        if (!response || response.status !== 'ok') {
-          reject(new Error(sheetName + ' cavab statusu ok deyil'));
-          return;
-        }
-        resolve(gvizToRows(response, sheetName));
-      } catch (e) {
-        reject(e);
-      }
-    };
-
-    script.onerror = function(){
-      delete window[callbackName];
-      script.remove();
-      reject(new Error(sheetName + ' yüklənmədi'));
-    };
-
-    script.src = url;
-    document.body.appendChild(script);
-  });
+  document.querySelectorAll(".tab-content").forEach(content => content.classList.remove("active"));
+  document.getElementById("tab-" + tab).classList.add("active");
 }
 
-function gvizToRows(response, sheetName){
-  const table = response.table || {};
-  const cols = table.cols || [];
-  const rows = table.rows || [];
-  const headers = cols.map((c, i) => cleanText(c.label || c.id || ('COL' + i)));
-  SHEET_DEBUG.push({sheet: sheetName, headers, rowCount: rows.length});
-
-  return rows.map(r => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      const cell = r.c && r.c[i] ? r.c[i] : null;
-      obj[h] = cell ? (cell.v ?? '') : '';
-      obj[h + '__f'] = cell ? (cell.f ?? '') : '';
-    });
-    return obj;
-  });
+function onSearch(value) {
+  productSearch = value.toLowerCase().trim();
+  productShown = PAGE;
+  applyProductFilters();
 }
 
-function headersOf(rows){ return rows.length ? Object.keys(rows[0]).filter(k => !k.endsWith('__f')) : []; }
-function valueByHeader(row, header){ return header ? row[header] : ''; }
-function findHeader(headers, tests){
-  const normalized = headers.map(h => ({h, n: norm(h)}));
-  for (const t of tests) {
-    const tn = norm(t);
-    const found = normalized.find(x => x.n === tn);
-    if (found) return found.h;
-  }
-  for (const t of tests) {
-    const tn = norm(t);
-    const found = normalized.find(x => x.n.includes(tn));
-    if (found) return found.h;
-  }
-  return null;
+function setFilter(filter, button) {
+  activeFilter = filter;
+  productShown = PAGE;
+
+  document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+  button.classList.add("active");
+
+  applyProductFilters();
 }
-function findStoreHeader(headers, store, kind){
-  const aliases = {
-    ARAZ: ['araz','arazmarket','araz market'],
-    BRAVO: ['bravo'],
-    TAMSTORE: ['tamstore','tam store'],
-    RAHATMARKET: ['rahatmarket','rahat market','rahat'],
-    BAZARSTORE: ['bazarstore','bazar store'],
-    WOLTMARKET: ['woltmarket','wolt market','wolt']
-  }[store] || [store];
-  const kindWords = kind === 'price'
-    ? ['price','qiymet','qiymət','newprice','saleprice']
-    : kind === 'diff'
-      ? ['diff','difference','ferq','fərq','percent','faiz']
-      : ['name','product','productname','mehsul','məhsul','title'];
-  const hs = headers.map(h => ({h, n: norm(h)}));
-  for (const a of aliases) {
-    const an = norm(a);
-    for (const kw of kindWords) {
-      const kn = norm(kw);
-      const found = hs.find(x => x.n.includes(an) && x.n.includes(kn));
-      if (found) return found.h;
+
+function applyProductFilters() {
+  productFiltered = ALL.filter(item => {
+    const matchesSearch = !productSearch || item.name.toLowerCase().includes(productSearch);
+
+    if (!matchesSearch) return false;
+
+    const competitorPrices = Object.values(item.stores || {})
+      .map(store => Number(store.price))
+      .filter(price => price > 0);
+
+    if (activeFilter === "all") {
+      return true;
     }
-  }
-  return null;
-}
 
-// ---- parsers ----
-function parseCatalogRows(rows, store){
-  const headers = headersOf(rows);
-  const nameH = findHeader(headers, [
-    'Product Name','Product','Name','Məhsul','Mehsul','Məhsul adı','ProductName','Title'
-  ]) || headers[0];
-  const priceH = findHeader(headers, [
-    'Price','Qiymət','Qiymet','Sale Price','New Price','Current Price','ARAZ Price'
-  ]) || headers.find(h => h !== nameH && rows.some(r => toNumber(r[h]) !== null));
-  const oldH = findHeader(headers, ['Original Price','Old Price','Əvvəlki qiymət','Evvelki qiymet','Regular Price']);
+    if (activeFilter === "only-araz") {
+      return competitorPrices.length === 0;
+    }
 
-  return rows.map(r => ({
-    store,
-    name: cleanText(valueByHeader(r, nameH)),
-    price: toNumber(valueByHeader(r, priceH)),
-    oldPrice: toNumber(valueByHeader(r, oldH))
-  })).filter(x => x.name && x.price !== null);
-}
+    if (!competitorPrices.length) {
+      return false;
+    }
 
-function parsePriceComparison(rows){
-  const headers = headersOf(rows);
-  if (!headers.length) return [];
+    const minCompetitor = Math.min(...competitorPrices);
+    const maxCompetitor = Math.max(...competitorPrices);
 
-  const productH = findHeader(headers, [
-    'Product Name','Araz Product Name','Araz Name','Araz Product','Məhsul','Mehsul','Name','Product'
-  ]) || headers[0];
-  const arazPriceH = findStoreHeader(headers, 'ARAZ', 'price') || findHeader(headers, ['Araz Price','Price','Qiymət','Qiymet']) || headers[1];
+    if (activeFilter === "cheaper") {
+      return Number(item.araz) < minCompetitor;
+    }
 
-  const result = rows.map(row => {
-    const name = cleanText(valueByHeader(row, productH));
-    const araz = toNumber(valueByHeader(row, arazPriceH));
-    const p = { name, araz, stores: {} };
+    if (activeFilter === "pricier") {
+      return Number(item.araz) > maxCompetitor;
+    }
 
-    STORES_ALL.filter(s => s !== 'ARAZ').forEach(store => {
-      let nameH = findStoreHeader(headers, store, 'name');
-      let priceH = findStoreHeader(headers, store, 'price');
-      let diffH = findStoreHeader(headers, store, 'diff');
-
-      // Ordinal fallback for common layout:
-      // ArazName, ArazPrice, BravoName, BravoPrice, TamstoreName, TamstorePrice...
-      if (!priceH) {
-        const order = ['BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET'];
-        const idx = order.indexOf(store);
-        const possibleName = headers[2 + idx * 2];
-        const possiblePrice = headers[3 + idx * 2];
-        if (possiblePrice && rows.some(r => toNumber(r[possiblePrice]) !== null)) {
-          nameH = nameH || possibleName;
-          priceH = possiblePrice;
-        }
-      }
-
-      const price = toNumber(valueByHeader(row, priceH));
-      if (price !== null) {
-        p.stores[store] = {
-          name: cleanText(valueByHeader(row, nameH)) || name,
-          price,
-          diff: cleanText(valueByHeader(row, diffH)) || calcDiff(araz, price)
-        };
-      }
-    });
-
-    return p;
-  }).filter(p => p.name && p.araz !== null);
-
-  return result;
-}
-
-function buildFromCatalogs(catalogs){
-  const arazRows = catalogs.ARAZ || [];
-  const byStore = {};
-  Object.keys(catalogs).forEach(store => {
-    byStore[store] = new Map();
-    catalogs[store].forEach(r => byStore[store].set(norm(r.name), r));
+    return true;
   });
 
-  return arazRows.map(arazItem => {
-    const p = { name: arazItem.name, araz: arazItem.price, stores: {} };
-    STORES_ALL.filter(s => s !== 'ARAZ').forEach(store => {
-      const m = byStore[store]?.get(norm(arazItem.name));
-      if (m && m.price !== null) {
-        p.stores[store] = { name: m.name, price: m.price, diff: calcDiff(arazItem.price, m.price) };
-      }
-    });
-    return p;
-  });
+  updateStats();
+  renderProducts();
 }
 
-// ---- app load ----
-async function initApp(){
-  showProductMessage('⏳', 'Data oxunur', 'Google Sheet-dən canlı data yüklənir...');
-  setStatus('Google Sheet-dən data oxunur...');
+function renderProducts() {
+  const productList = document.getElementById("productList");
+  const prodLoadMore = document.getElementById("prodLoadMore");
 
-  try {
-    // First try the ready comparison sheet. This is the fastest and closest to the uploaded project.
-    const pcRows = await loadSheet(SHEET_NAMES.PRICE_COMPARISON);
-    ALL = parsePriceComparison(pcRows);
-  } catch(e) {
-    console.warn('PriceComparison oxunmadı:', e);
-    ALL = [];
-  }
+  productList.innerHTML = "";
 
-  // Also load store catalog sheets for the Mağaza Axtarışı tab and as fallback.
-  const storeSheetPairs = [
-    ['ARAZ', SHEET_NAMES.ARAZ],
-    ['BRAVO', SHEET_NAMES.BRAVO],
-    ['TAMSTORE', SHEET_NAMES.TAMSTORE],
-    ['RAHATMARKET', SHEET_NAMES.RAHATMARKET],
-    ['BAZARSTORE', SHEET_NAMES.BAZARSTORE],
-    ['WOLTMARKET', SHEET_NAMES.WOLTMARKET]
-  ];
-
-  const catalogResults = await Promise.allSettled(
-    storeSheetPairs.map(([store, sheet]) => loadSheet(sheet).then(rows => [store, parseCatalogRows(rows, store)]))
-  );
-  const catalogs = {};
-  catalogResults.forEach(r => {
-    if (r.status === 'fulfilled') catalogs[r.value[0]] = r.value[1];
-  });
-
-  STORE_ROWS = Object.values(catalogs).flat();
-
-  if (!ALL.length && catalogs.ARAZ) {
-    ALL = buildFromCatalogs(catalogs);
-  }
-
-  if (!ALL.length) {
-    showProductMessage('⚠️', 'Data tapılmadı', 'Sheet oxundu, amma sütun adları gözlənilən formatda deyil. Console-da SHEET_DEBUG-a baxın.');
-    console.log('SHEET_DEBUG', SHEET_DEBUG);
+  if (!productFiltered.length) {
+    productList.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <h3>Məhsul tapılmadı</h3>
+        <p>Axtarışı dəyişib yenidən yoxlayın</p>
+      </div>
+    `;
+    prodLoadMore.style.display = "none";
     return;
   }
 
-  applyFilters();
-  buildStoreFiltered();
+  const visible = productFiltered.slice(0, productShown);
+
+  visible.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "prod-card";
+
+    card.innerHTML = `
+      <div class="prod-card-name">${escapeHTML(item.name)}</div>
+      <div class="stores-row">
+        ${renderStorePill("ARAZ", item.name, item.araz, item)}
+        ${STORES_ALL.filter(store => store !== "ARAZ").map(storeKey => {
+          const store = item.stores ? item.stores[storeKey] : null;
+          return renderStorePill(storeKey, store ? store.name : "", store ? store.price : null, item);
+        }).join("")}
+      </div>
+    `;
+
+    productList.appendChild(card);
+  });
+
+  prodLoadMore.style.display = productFiltered.length > productShown ? "block" : "none";
 }
 
-// ---- TAB 1: Product comparison ----
-let f_filter='all', f_search='', f_page=0, f_filtered=[];
+function renderStorePill(storeKey, productName, price, item) {
+  const allPrices = [
+    Number(item.araz),
+    ...Object.values(item.stores || {}).map(store => Number(store.price))
+  ].filter(price => price > 0);
 
-function switchTab(tab,btn){
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  btn.classList.add('active');
-  if(tab==='stores') initStoreTab();
-}
+  const min = allPrices.length ? Math.min(...allPrices) : null;
+  const max = allPrices.length ? Math.max(...allPrices) : null;
 
-function onSearch(v){ f_search=v.trim().toLowerCase(); f_page=0; applyFilters(); }
-function setFilter(f,btn){
-  f_filter=f; f_page=0;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  applyFilters();
-}
-function hasComparableStores(p){
-  return Object.values(p.stores || {}).some(s=>s && s.price!==null && s.price!==undefined);
-}
-function matchesSearch(p, q){
-  if(!q) return true;
-  q=q.toLowerCase();
-  if((p.name||'').toLowerCase().includes(q)) return true;
-  return Object.values(p.stores || {}).some(s => (s.name||'').toLowerCase().includes(q));
-}
-function applyFilters(){
-  let r = ALL.filter(p => p && p.name);
-  if(f_search) r = r.filter(p=>matchesSearch(p, f_search));
+  const numericPrice = Number(price);
 
-  if(f_filter==='cheaper') {
-    r = r.filter(p=>Object.values(p.stores || {}).some(s=>s.diff&&String(s.diff).startsWith('+')));
-  } else if(f_filter==='pricier') {
-    r = r.filter(p=>Object.values(p.stores || {}).some(s=>s.diff&&String(s.diff).startsWith('-')));
-  } else if(f_filter==='only-araz') {
-    r = r.filter(p=>!hasComparableStores(p));
+  if (!numericPrice) {
+    return `
+      <div class="store-pill no-data">
+        <div class="sp-name">${STORE_LABELS[storeKey] || storeKey}</div>
+        <div class="sp-product-name">Məlumat yoxdur</div>
+        <div class="sp-price dash">-</div>
+      </div>
+    `;
   }
 
-  f_filtered = r;
-  document.getElementById('statsBar').innerHTML='<b>'+r.length.toLocaleString()+'</b> məhsul mövcuddur';
-  document.getElementById('resultsTitleTxt').textContent='Nəticələr ('+r.length.toLocaleString()+')';
-  renderProd();
-}
-function renderProd(){
-  const list=document.getElementById('productList');
-  const page=f_filtered.slice(0,(f_page+1)*PAGE);
-  list.innerHTML=page.length===0
-    ?'<div class="empty"><div class="empty-icon">🔍</div><h3>Məhsul tapılmadı</h3><p>Başqa açar söz sınayın</p></div>'
-    :page.map(p=>prodCard(p)).join('');
-  document.getElementById('prodLoadMore').style.display=f_filtered.length>(f_page+1)*PAGE?'block':'none';
-}
-function prodMore(){ f_page++; renderProd(); }
-function prodCard(p){
-  const sKeys=Object.keys(p.stores || {});
-  let minP=p.araz, maxP=p.araz;
-  sKeys.forEach(k=>{ const pr=p.stores[k].price; if(pr<minP)minP=pr; if(pr>maxP)maxP=pr; });
+  const isCheapest = numericPrice === min && allPrices.length > 1;
+  const isPriciest = numericPrice === max && allPrices.length > 1;
 
-  const pills=STORES_ALL.map(s=>{
-    if(s==='ARAZ'){
-      const cheap=p.araz<=minP&&sKeys.length>0;
-      const dear=p.araz>=maxP&&sKeys.length>0&&p.araz>minP;
-      let cls=cheap?'cheapest':dear?'priciest':'';
-      let badge=cheap?'<div class="store-badge badge-cheap">Ən Ucuz</div>':dear?'<div class="store-badge badge-dear">Ən Baha</div>':'';
-      return `<div class="store-pill ${cls}" style="padding-top:${badge?'20px':'11px'}">
-        ${badge}<div class="sp-name">ARAZ</div>
-        <div class="sp-product-name">${escapeHTML(p.name)}</div>
-        <div class="sp-price">${formatPrice(p.araz)}</div>
-      </div>`;
-    }
-    if(!p.stores || !p.stores[s]) return `<div class="store-pill no-data">
-      <div class="sp-name">${STORE_LABELS[s]||s}</div>
-      <div class="sp-price dash">–</div>
-    </div>`;
-    const sd=p.stores[s];
-    const ch=sd.price<=minP;
-    const dr=sd.price>=maxP&&sd.price>p.araz;
-    let cls2=ch?'cheapest':dr?'priciest':'';
-    let badge2=ch?'<div class="store-badge badge-cheap">Ən Ucuz</div>':dr?'<div class="store-badge badge-dear">Ən Baha</div>':'';
-    const isPos=sd.diff&&String(sd.diff).startsWith('+');
-    return `<div class="store-pill ${cls2}" style="padding-top:${badge2?'20px':'11px'}">
-      ${badge2}<div class="sp-name">${STORE_LABELS[s]||s}</div>
-      <div class="sp-product-name">${escapeHTML(sd.name||p.name)}</div>
-      <div class="sp-price">${formatPrice(sd.price)}</div>
-      ${sd.diff?`<div class="sp-diff ${isPos?'diff-neg':'diff-pos'}">${escapeHTML(sd.diff)}</div>`:''}
-    </div>`;
-  }).join('');
+  let diffHtml = "";
 
-  return `<div class="prod-card">
-    <div class="prod-card-name">${escapeHTML(p.name)}</div>
-    <div class="stores-row">${pills}</div>
-  </div>`;
+  if (storeKey !== "ARAZ" && item.araz) {
+    const diff = ((numericPrice - Number(item.araz)) / Number(item.araz)) * 100;
+    const sign = diff > 0 ? "+" : "";
+    const cls = diff > 0 ? "diff-pos" : "diff-neg";
+    diffHtml = `<div class="sp-diff ${cls}">${sign}${diff.toFixed(1)}%</div>`;
+  }
+
+  return `
+    <div class="store-pill ${isCheapest ? "cheapest" : ""} ${isPriciest ? "priciest" : ""}">
+      ${isCheapest ? `<div class="store-badge badge-cheap">ƏN UCUZ</div>` : ""}
+      ${isPriciest ? `<div class="store-badge badge-dear">ƏN BAHA</div>` : ""}
+
+      <div class="sp-name">${STORE_LABELS[storeKey] || storeKey}</div>
+      <div class="sp-product-name">${escapeHTML(productName || item.name)}</div>
+      <div class="sp-price">${formatPrice(numericPrice)}</div>
+      ${diffHtml}
+    </div>
+  `;
 }
 
-// ---- TAB 2: Store search ----
-let s_store='ALL', s_search='', s_page=0, s_filtered=[], s_loaded=false;
-function initStoreTab(){ if(!s_loaded){ buildStoreFiltered(); s_loaded=true; } }
-function onStoreChange(){ s_store=document.getElementById('storeSelect').value; }
-function analyzeStore(){
-  s_store=document.getElementById('storeSelect').value;
-  s_search=document.getElementById('storeSearchInput').value.trim().toLowerCase();
-  s_page=0;
-  buildStoreFiltered();
+function prodMore() {
+  productShown += PAGE;
+  renderProducts();
 }
-function onStoreSearch(v){ s_search=v.trim().toLowerCase(); s_page=0; buildStoreFiltered(); }
-function buildStoreFiltered(){
-  s_store=document.getElementById('storeSelect').value;
-  let rows=[];
 
-  if (STORE_ROWS.length) {
-    rows = STORE_ROWS.filter(r => {
-      if (s_store !== 'ALL' && r.store !== s_store) return false;
-      if (!s_search) return true;
-      return (r.name || '').toLowerCase().includes(s_search);
-    });
-  } else {
-    ALL.forEach(p=>{
-      if((s_store==='ALL'||s_store==='ARAZ') && p.araz!==null && p.araz!==undefined){
-        if(!s_search||(p.name||'').toLowerCase().includes(s_search)){
-          rows.push({name:p.name,store:'ARAZ',price:p.araz,oldPrice:null});
-        }
-      }
-      const stores=s_store==='ALL'?['BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET']:(s_store!=='ARAZ'?[s_store]:[]);
-      stores.forEach(st=>{
-        const item=p.stores && p.stores[st];
-        if(item && item.price!==null && item.price!==undefined){
-          const sn=item.name||p.name;
-          if(!s_search||sn.toLowerCase().includes(s_search)||(p.name||'').toLowerCase().includes(s_search)){
-            rows.push({name:sn,store:st,price:item.price,oldPrice:null,arazName:p.name,arazPrice:p.araz});
-          }
-        }
+function updateStats() {
+  const statsBar = document.getElementById("statsBar");
+
+  statsBar.innerHTML =
+    `<b>${productFiltered.length}</b> məhsul göstərilir / ümumi <b>${ALL.length}</b> məhsul`;
+}
+
+function buildStoreProducts() {
+  storeProducts = [];
+
+  ALL.forEach(item => {
+    if (item.araz) {
+      storeProducts.push({
+        store: "ARAZ",
+        name: item.name,
+        price: Number(item.araz),
+        oldPrice: null
       });
+    }
+
+    Object.entries(item.stores || {}).forEach(([storeKey, store]) => {
+      if (store && store.price) {
+        storeProducts.push({
+          store: storeKey,
+          name: store.name || item.name,
+          price: Number(store.price),
+          oldPrice: null
+        });
+      }
+    });
+  });
+
+  storeFiltered = [...storeProducts];
+
+  document.getElementById("storeCount").textContent = storeFiltered.length;
+}
+
+function onStoreChange() {
+  activeStore = document.getElementById("storeSelect").value;
+  storeShown = PAGE;
+  applyStoreFilters();
+}
+
+function onStoreSearch(value) {
+  storeSearch = value.toLowerCase().trim();
+  storeShown = PAGE;
+  applyStoreFilters();
+}
+
+function analyzeStore() {
+  applyStoreFilters();
+}
+
+function applyStoreFilters() {
+  storeFiltered = storeProducts.filter(item => {
+    const matchesStore = activeStore === "ALL" || item.store === activeStore;
+    const matchesSearch = !storeSearch || item.name.toLowerCase().includes(storeSearch);
+
+    return matchesStore && matchesSearch;
+  });
+
+  document.getElementById("storeCount").textContent = storeFiltered.length;
+  renderStoreProducts();
+}
+
+function renderStoreProducts() {
+  const storeList = document.getElementById("storeList");
+  const storeLoadMore = document.getElementById("storeLoadMore");
+
+  storeList.innerHTML = "";
+
+  if (!storeFiltered.length) {
+    storeList.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <h3>Məhsul tapılmadı</h3>
+        <p>Mağaza və ya axtarış sözünü dəyişin</p>
+      </div>
+    `;
+    storeLoadMore.style.display = "none";
+    return;
+  }
+
+  const visible = storeFiltered.slice(0, storeShown);
+
+  visible.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "store-list-item";
+
+    row.innerHTML = `
+      <div class="sli-name">${escapeHTML(item.name)}</div>
+      <div class="sli-store">${STORE_LABELS[item.store] || item.store}</div>
+      <div class="sli-prices">
+        <div class="sli-only-price">${formatPrice(item.price)}</div>
+      </div>
+    `;
+
+    storeList.appendChild(row);
+  });
+
+  storeLoadMore.style.display = storeFiltered.length > storeShown ? "block" : "none";
+}
+
+function storeMore() {
+  storeShown += PAGE;
+  renderStoreProducts();
+}
+
+function downloadExcel(type) {
+  let rows = [];
+
+  if (type === "prod") {
+    rows.push(["Product Name", "Araz Price", "Bravo", "Tamstore", "Rahatmarket", "Bazarstore", "Woltmarket"]);
+
+    productFiltered.forEach(item => {
+      rows.push([
+        item.name,
+        item.araz || "",
+        item.stores?.BRAVO?.price || "",
+        item.stores?.TAMSTORE?.price || "",
+        item.stores?.RAHATMARKET?.price || "",
+        item.stores?.BAZARSTORE?.price || "",
+        item.stores?.WOLTMARKET?.price || ""
+      ]);
+    });
+  } else {
+    rows.push(["Store", "Product Name", "Price"]);
+
+    storeFiltered.forEach(item => {
+      rows.push([
+        item.store,
+        item.name,
+        item.price
+      ]);
     });
   }
 
-  s_filtered=rows;
-  document.getElementById('storeCount').textContent=rows.length.toLocaleString();
-  renderStore();
-}
-function renderStore(){
-  const list=document.getElementById('storeList');
-  const page=s_filtered.slice(0,(s_page+1)*PAGE);
-  list.innerHTML=page.length===0
-    ?'<div class="empty"><div class="empty-icon">🏪</div><h3>Məhsul tapılmadı</h3><p>Mağaza seçin və axtarış edin</p></div>'
-    :page.map(r=>storeItem(r)).join('');
-  document.getElementById('storeLoadMore').style.display=s_filtered.length>(s_page+1)*PAGE?'block':'none';
-}
-function storeMore(){ s_page++; renderStore(); }
-function storeItem(r){
-  const priceHtml=r.oldPrice
-    ?`<div class="sli-prices"><span class="sli-old-price">${formatPrice(r.oldPrice)}</span><div class="sli-new-price">${formatPrice(r.price)}</div></div>`
-    :`<div class="sli-prices"><div class="sli-only-price">${formatPrice(r.price)}</div></div>`;
-  return `<div class="store-list-item">
-    <div class="sli-name">${escapeHTML(r.name)}</div>
-    <div class="sli-store">${STORE_LABELS[r.store] || r.store}</div>
-    ${priceHtml}
-  </div>`;
-}
-function downloadExcel(tab){
-  let rows,hdr;
-  if(tab==='prod'){
-    hdr=['Məhsul','ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET','BRAVO Fərq','TAMSTORE Fərq','RAHATMARKET Fərq','BAZARSTORE Fərq','WOLTMARKET Fərq'];
-    rows=f_filtered.slice(0,5000).map(p=>[p.name,p.araz,p.stores?.BRAVO?.price??'',p.stores?.TAMSTORE?.price??'',p.stores?.RAHATMARKET?.price??'',p.stores?.BAZARSTORE?.price??'',p.stores?.WOLTMARKET?.price??'',p.stores?.BRAVO?.diff??'',p.stores?.TAMSTORE?.diff??'',p.stores?.RAHATMARKET?.diff??'',p.stores?.BAZARSTORE?.diff??'',p.stores?.WOLTMARKET?.diff??'']);
-  } else {
-    hdr=['Məhsul','Mağaza','Qiymət','Köhnə Qiymət'];
-    rows=s_filtered.slice(0,5000).map(r=>[r.name,r.store,r.price,r.oldPrice??'']);
-  }
-  const csv=[hdr,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='export.csv';a.click();
+  const csv = rows
+    .map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = type === "prod" ? "araz-reqib-analizi.csv" : "araz-magaza-axtarisi.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
 }
 
-initApp();
+function formatPrice(value) {
+  const number = Number(value);
+
+  if (!number) {
+    return "-";
+  }
+
+  return number.toFixed(2) + " ₼";
+}
+
+function escapeHTML(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+init();
 </script>
+
 </body>
 </html>
