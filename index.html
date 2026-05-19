@@ -259,18 +259,32 @@ nav::after{
 <script>
 const SPREADSHEET_ID = "1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU";
 
-const SOURCE_SHEETS = [
-  { key:"ARAZ", sheet:"Arazmarket", label:"ARAZ" },
-  { key:"BRAVO", sheet:"Bravo", label:"BRAVO" },
-  { key:"TAMSTORE", sheet:"Tamstore", label:"TAMSTORE" },
-  { key:"RAHATMARKET", sheet:"Rahatmarket", label:"RAHAT" },
-  { key:"BAZARSTORE", sheet:"Bazarstore", label:"BAZARSTORE" },
-  { key:"WOLTMARKET", sheet:"WoltMarket", label:"WOLT" }
-];
+const STORE_LABELS = {
+  ARAZ: "ARAZ",
+  BRAVO: "BRAVO",
+  TAMSTORE: "TAMSTORE",
+  RAHATMARKET: "RAHAT",
+  BAZARSTORE: "BAZARSTORE",
+  WOLTMARKET: "WOLT"
+};
 
-const STORES_ALL = ["ARAZ","BRAVO","TAMSTORE","RAHATMARKET","BAZARSTORE","WOLTMARKET"];
-const STORE_LABELS = Object.fromEntries(SOURCE_SHEETS.map(s => [s.key, s.label]));
+const STORES_ALL = ["ARAZ", "BRAVO", "TAMSTORE", "RAHATMARKET", "BAZARSTORE", "WOLTMARKET"];
 const PAGE = 30;
+
+/*
+  Bu versiya əvvəl işləyən Google gviz default cavab üsuluna qayıdır:
+  google.visualization.Query.setResponse(...)
+  responseHandler istifadə etmir, ona görə "data yüklənir"də qalma ehtimalı azalır.
+*/
+const SHEET_CANDIDATES = {
+  PRICECOMPARISON: ["PriceComparison", "Price Comparison", "PRICECOMPARISON"],
+  ARAZ: ["Arazmarket", "Araz Market", "Araz", "ARAZ"],
+  BRAVO: ["Bravo", "BRAVO"],
+  TAMSTORE: ["Tamstore", "TAMSTORE", "Tam Store"],
+  RAHATMARKET: ["Rahatmarket", "RahatMarket", "Rahat Market", "RAHATMARKET"],
+  BAZARSTORE: ["Bazarstore", "BazarStore", "Bazar Store", "BAZARSTORE"],
+  WOLTMARKET: ["WoltMarket", "Woltmarket", "Wolt Market", "WOLTMARKET"]
+};
 
 let ALL = [];
 let rawStoreRows = [];
@@ -278,12 +292,40 @@ let productFiltered = [];
 let productShown = PAGE;
 let productSearch = "";
 let activeFilter = "all";
+
 let storeProducts = [];
 let storeFiltered = [];
 let storeShown = PAGE;
 let storeSearch = "";
 let activeStore = "ALL";
+
 let DEBUG = [];
+let currentLoaderResolve = null;
+let currentLoaderTimer = null;
+let currentScript = null;
+
+window.google = {
+  visualization: {
+    Query: {
+      setResponse: function(response) {
+        if (currentLoaderTimer) {
+          clearTimeout(currentLoaderTimer);
+          currentLoaderTimer = null;
+        }
+
+        if (currentScript) {
+          currentScript.remove();
+          currentScript = null;
+        }
+
+        if (currentLoaderResolve) {
+          currentLoaderResolve(response);
+          currentLoaderResolve = null;
+        }
+      }
+    }
+  }
+};
 
 function switchTab(tab, button) {
   document.querySelectorAll(".nav-tab").forEach(btn => btn.classList.remove("active"));
@@ -292,55 +334,110 @@ function switchTab(tab, button) {
   document.getElementById("tab-" + tab).classList.add("active");
 }
 
-function getSheetUrl(sheetName, callbackName) {
+function getSheetUrl(sheetName) {
   return "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
-    "/gviz/tq?sheet=" + encodeURIComponent(sheetName) +
-    "&tqx=out:json;responseHandler:" + callbackName +
+    "/gviz/tq?tqx=out:json" +
+    "&sheet=" + encodeURIComponent(sheetName) +
     "&cacheBust=" + Date.now();
 }
 
-function loadSheet(sheetConfig) {
+function loadSheetByName(sheetName) {
   return new Promise(resolve => {
-    const safeName = sheetConfig.key.replace(/[^A-Z0-9]/gi, "");
-    const callbackName = "sheetCallback_" + safeName + "_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+    if (currentScript) {
+      currentScript.remove();
+      currentScript = null;
+    }
 
-    const script = document.createElement("script");
-
-    window[callbackName] = function(response) {
+    currentLoaderResolve = function(response) {
       try {
-        delete window[callbackName];
-        script.remove();
-
         if (!response || response.status !== "ok") {
-          DEBUG.push(sheetConfig.sheet + ": response status error");
-          resolve([]);
+          resolve({ ok: false, sheetName, rows: [], headers: [], reason: "status not ok" });
           return;
         }
 
-        const cols = response.table.cols || [];
-        const rows = response.table.rows || [];
-        const headers = cols.map((col, i) => normalizeHeader(col.label || col.id || ("col" + i)));
+        const table = response.table || {};
+        let rows = table.rows || [];
+        const cols = table.cols || [];
 
-        DEBUG.push(sheetConfig.sheet + ": " + rows.length + " row, headers: " + headers.join(" | "));
+        let headers = cols.map((col, i) => String(col.label || col.id || ("col" + i)).trim());
 
-        const parsed = rows.map(row => parseRow(row, headers, sheetConfig)).filter(Boolean);
-        resolve(parsed);
-      } catch (error) {
-        DEBUG.push(sheetConfig.sheet + ": " + error.message);
-        resolve([]);
+        const looksGeneric = headers.every(h => /^col\d+$|^[A-Z]$/i.test(h || ""));
+        if (looksGeneric && rows.length) {
+          const firstRow = rows[0];
+          const firstValues = (firstRow.c || []).map(c => c ? String(c.v ?? c.f ?? "").trim() : "");
+          const textCount = firstValues.filter(v => v && !isFinite(toNumber(v))).length;
+
+          if (textCount >= 2) {
+            headers = firstValues;
+            rows = rows.slice(1);
+          }
+        }
+
+        resolve({ ok: true, sheetName, rows, headers });
+      } catch (e) {
+        resolve({ ok: false, sheetName, rows: [], headers: [], reason: e.message });
       }
     };
 
+    currentLoaderTimer = setTimeout(() => {
+      if (currentScript) {
+        currentScript.remove();
+        currentScript = null;
+      }
+      currentLoaderResolve = null;
+      resolve({ ok: false, sheetName, rows: [], headers: [], reason: "timeout" });
+    }, 12000);
+
+    const script = document.createElement("script");
+    currentScript = script;
+
     script.onerror = function() {
-      delete window[callbackName];
-      script.remove();
-      DEBUG.push(sheetConfig.sheet + ": yüklənmədi");
-      resolve([]);
+      if (currentLoaderTimer) {
+        clearTimeout(currentLoaderTimer);
+        currentLoaderTimer = null;
+      }
+
+      if (currentScript) {
+        currentScript.remove();
+        currentScript = null;
+      }
+
+      currentLoaderResolve = null;
+      resolve({ ok: false, sheetName, rows: [], headers: [], reason: "script error" });
     };
 
-    script.src = getSheetUrl(sheetConfig.sheet, callbackName);
+    script.src = getSheetUrl(sheetName);
     document.body.appendChild(script);
   });
+}
+
+async function loadFirstWorkingSheet(candidateNames, labelForDebug) {
+  for (const name of candidateNames) {
+    const result = await loadSheetByName(name);
+
+    DEBUG.push(
+      labelForDebug +
+      " / " +
+      name +
+      ": " +
+      (result.ok ? result.rows.length + " row" : "xeta - " + result.reason) +
+      " | headers: " +
+      result.headers.join(" | ")
+    );
+
+    if (result.ok && result.rows.length) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+function cellValue(row, index) {
+  if (!row || !row.c || index < 0) return "";
+  const cell = row.c[index];
+  if (!cell) return "";
+  return cell.v ?? cell.f ?? "";
 }
 
 function normalizeHeader(value) {
@@ -353,94 +450,230 @@ function normalizeHeader(value) {
     .replace(/ğ/g, "g")
     .replace(/ş/g, "s")
     .replace(/ç/g, "c")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-function cellValue(row, index) {
-  if (!row || !row.c || index < 0) return "";
-  const cell = row.c[index];
-  if (!cell) return "";
-  return cell.v ?? cell.f ?? "";
+function normalizedHeaders(headers) {
+  return headers.map(normalizeHeader);
 }
 
-function cellFormatted(row, index) {
-  if (!row || !row.c || index < 0) return "";
-  const cell = row.c[index];
-  if (!cell) return "";
-  return cell.f ?? cell.v ?? "";
+function findAnyHeaderIndex(headers, candidates, excludes = []) {
+  const normalized = normalizedHeaders(headers);
+  const excludeNorm = excludes.map(normalizeHeader);
+
+  for (const candidate of candidates) {
+    const parts = (Array.isArray(candidate) ? candidate : [candidate]).map(normalizeHeader);
+
+    for (let i = 0; i < normalized.length; i++) {
+      const h = normalized[i];
+      const ok = parts.every(p => h.includes(p));
+      const bad = excludeNorm.some(ex => h.includes(ex));
+
+      if (ok && !bad) return i;
+    }
+  }
+
+  return -1;
 }
 
-function parseRow(row, headers, sheetConfig) {
-  const values = headers.map((_, i) => cellValue(row, i));
-  if (!values.some(v => String(v || "").trim() !== "")) return null;
+function firstStringIndex(row) {
+  for (let i = 0; i < (row.c || []).length; i++) {
+    const v = cellValue(row, i);
+    if (typeof v === "string" && String(v).trim().length > 1) return i;
+  }
 
-  let nameIndex = findIndex(headers, [
-    "product name", "product", "name", "mehsul", "mehsul adi", "məhsul", "məhsul adı", "title", "item"
+  return 0;
+}
+
+function firstNumericIndex(row, skip = []) {
+  for (let i = 0; i < (row.c || []).length; i++) {
+    if (skip.includes(i)) continue;
+    const n = toNumber(cellValue(row, i));
+    if (n > 0) return i;
+  }
+
+  return -1;
+}
+
+function parseStoreSheet(result, storeKey) {
+  const headers = result.headers || [];
+
+  let nameIndex = findAnyHeaderIndex(headers, [
+    "product name",
+    "product",
+    "name",
+    "mehsul",
+    "mehsul adi",
+    "məhsul",
+    "məhsul adı",
+    "title",
+    "item"
   ]);
 
-  if (nameIndex < 0) {
-    nameIndex = values.findIndex(v => typeof v === "string" && String(v).trim().length > 2);
-  }
+  let priceIndex = findAnyHeaderIndex(headers, [
+    "price",
+    "qiymet",
+    "qiymət",
+    "sale price",
+    "current price",
+    "new price"
+  ], ["old", "original", "evvel", "əvvel", "regular"]);
 
-  let priceIndex = findPriceIndex(headers, values, ["price", "qiymet", "qiymət", "sale price", "current price", "new price", "araz price"]);
-  let oldPriceIndex = findIndex(headers, ["original price", "old price", "evvelki qiymet", "əvvəlki qiymət", "regular price"]);
+  let oldPriceIndex = findAnyHeaderIndex(headers, [
+    "original price",
+    "old price",
+    "evvelki qiymet",
+    "əvvəlki qiymət",
+    "regular price"
+  ]);
 
-  if (oldPriceIndex < 0) {
-    oldPriceIndex = headers.findIndex(h => h.includes("original") || h.includes("old") || h.includes("evvel") || h.includes("əvvel"));
-  }
+  return result.rows.map(row => {
+    const ni = nameIndex >= 0 ? nameIndex : firstStringIndex(row);
+    const pi = priceIndex >= 0 ? priceIndex : firstNumericIndex(row, [ni, oldPriceIndex]);
+    const oi = oldPriceIndex >= 0 ? oldPriceIndex : -1;
 
-  if (priceIndex < 0) {
-    const numericIndexes = values.map((v, i) => [i, toNumber(v)]).filter(([i, n]) => n > 0 && i !== oldPriceIndex);
-    if (numericIndexes.length) priceIndex = numericIndexes[0][0];
-  }
+    const name = String(cellValue(row, ni) || "").trim();
+    const price = toNumber(cellValue(row, pi));
+    const oldPrice = toNumber(cellValue(row, oi));
 
-  const name = String(cellValue(row, nameIndex) || "").trim();
-  const price = toNumber(cellValue(row, priceIndex));
-  const oldPrice = toNumber(cellValue(row, oldPriceIndex));
+    if (!name || !price) return null;
 
-  if (!name || !price) return null;
-
-  return {
-    store: sheetConfig.key,
-    storeLabel: sheetConfig.label,
-    name,
-    price,
-    oldPrice,
-    priceFormatted: cellFormatted(row, priceIndex),
-    oldPriceFormatted: oldPriceIndex >= 0 ? cellFormatted(row, oldPriceIndex) : ""
-  };
+    return {
+      store: storeKey,
+      storeLabel: STORE_LABELS[storeKey] || storeKey,
+      name,
+      price,
+      oldPrice
+    };
+  }).filter(Boolean);
 }
 
-function findIndex(headers, candidates) {
-  for (const c of candidates) {
-    const normalized = normalizeHeader(c);
-    const exact = headers.findIndex(h => h === normalized);
-    if (exact >= 0) return exact;
-  }
-  for (const c of candidates) {
-    const normalized = normalizeHeader(c);
-    const partial = headers.findIndex(h => h.includes(normalized));
-    if (partial >= 0) return partial;
-  }
-  return -1;
-}
+function parsePriceComparison(result) {
+  const headers = result.headers || [];
+  const rows = result.rows || [];
 
-function findPriceIndex(headers, values, candidates) {
-  const blocked = ["original", "old", "evvel", "əvvel", "regular"];
-  for (const c of candidates) {
-    const normalized = normalizeHeader(c);
-    const idx = headers.findIndex(h => h.includes(normalized) && !blocked.some(b => h.includes(b)));
-    if (idx >= 0) return idx;
-  }
-  return -1;
+  const productNameIndex = findAnyHeaderIndex(headers, [
+    "product name",
+    "product",
+    "name",
+    "mehsul",
+    "mehsul adi",
+    "məhsul",
+    "məhsul adı"
+  ]);
+
+  const output = [];
+
+  rows.forEach(row => {
+    const baseNameIndex = productNameIndex >= 0 ? productNameIndex : firstStringIndex(row);
+    const baseName = String(cellValue(row, baseNameIndex) || "").trim();
+
+    if (!baseName) return;
+
+    const item = {
+      name: baseName,
+      araz: 0,
+      stores: {}
+    };
+
+    for (const storeKey of STORES_ALL) {
+      const storeWords =
+        storeKey === "RAHATMARKET" ? ["rahat", "rahatmarket"] :
+        storeKey === "WOLTMARKET" ? ["wolt", "woltmarket"] :
+        storeKey === "BAZARSTORE" ? ["bazar", "bazarstore"] :
+        [storeKey.toLowerCase()];
+
+      let priceIndex = -1;
+      let nameIndex = -1;
+
+      for (const word of storeWords) {
+        if (priceIndex < 0) {
+          priceIndex = findAnyHeaderIndex(headers, [
+            [word, "price"],
+            [word, "qiymet"],
+            [word, "qiymət"],
+            word
+          ], ["name", "product", "mehsul", "məhsul"]);
+        }
+
+        if (nameIndex < 0) {
+          nameIndex = findAnyHeaderIndex(headers, [
+            [word, "name"],
+            [word, "product"],
+            [word, "mehsul"],
+            [word, "məhsul"]
+          ]);
+        }
+      }
+
+      if (priceIndex < 0) continue;
+
+      const price = toNumber(cellValue(row, priceIndex));
+
+      if (!price) continue;
+
+      const productName = nameIndex >= 0 ? String(cellValue(row, nameIndex) || "").trim() : baseName;
+
+      if (storeKey === "ARAZ") {
+        item.araz = price;
+        item.name = productName || baseName;
+      } else {
+        item.stores[storeKey] = {
+          name: productName || baseName,
+          price,
+          diff: ""
+        };
+      }
+    }
+
+    if (!item.araz) {
+      const nums = [];
+
+      for (let i = 0; i < (row.c || []).length; i++) {
+        if (i === baseNameIndex) continue;
+        const n = toNumber(cellValue(row, i));
+        if (n > 0) nums.push({ index: i, value: n });
+      }
+
+      if (nums.length) {
+        item.araz = nums[0].value;
+
+        const competitorKeys = ["BRAVO", "TAMSTORE", "RAHATMARKET", "BAZARSTORE", "WOLTMARKET"];
+        nums.slice(1, 6).forEach((n, idx) => {
+          const storeKey = competitorKeys[idx];
+
+          item.stores[storeKey] = {
+            name: baseName,
+            price: n.value,
+            diff: ""
+          };
+        });
+      }
+    }
+
+    if (item.name && item.araz) {
+      fillDiffs(item);
+      output.push(item);
+    }
+  });
+
+  return output;
 }
 
 function normalizeName(value) {
   return String(value || "")
     .toLowerCase()
-    .replace(/ı/g,"i").replace(/ə/g,"e").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ğ/g,"g").replace(/ş/g,"s").replace(/ç/g,"c")
+    .replace(/ı/g, "i")
+    .replace(/ə/g, "e")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/ğ/g, "g")
+    .replace(/ş/g, "s")
+    .replace(/ç/g, "c")
     .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\b(kg|kq|qr|gr|q|ml|lt|l|ed|eded|əd|ədəd|x|li|lu|lü)\b/g, " ")
+    .replace(/\b(kg|kq|qr|gr|q|ml|lt|l|ed|eded|əd|ədəd|x|li|lu|lü|paket|pack)\b/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -452,12 +685,17 @@ function tokens(value) {
 function similarity(a, b) {
   const ta = tokens(a);
   const tb = tokens(b);
+
   if (!ta.length || !tb.length) return 0;
 
   const setA = new Set(ta);
   const setB = new Set(tb);
+
   let inter = 0;
-  setA.forEach(t => { if (setB.has(t)) inter++; });
+  setA.forEach(t => {
+    if (setB.has(t)) inter++;
+  });
+
   const union = new Set([...setA, ...setB]).size;
   const jaccard = union ? inter / union : 0;
 
@@ -468,7 +706,7 @@ function similarity(a, b) {
   return jaccard + contains;
 }
 
-function buildComparison(rows) {
+function buildComparisonFromStoreSheets(rows) {
   const arazRows = rows.filter(r => r.store === "ARAZ");
   const competitors = rows.filter(r => r.store !== "ARAZ");
 
@@ -479,47 +717,139 @@ function buildComparison(rows) {
       stores: {}
     };
 
-    for (const store of STORES_ALL.filter(s => s !== "ARAZ")) {
-      const candidates = competitors.filter(r => r.store === store);
+    for (const storeKey of STORES_ALL.filter(s => s !== "ARAZ")) {
+      const candidates = competitors.filter(r => r.store === storeKey);
+
       let best = null;
       let bestScore = 0;
 
       for (const c of candidates) {
         const score = similarity(araz.name, c.name);
+
         if (score > bestScore) {
           bestScore = score;
           best = c;
         }
       }
 
-      if (best && bestScore >= 0.34) {
-        const diff = ((best.price - araz.price) / araz.price) * 100;
-        item.stores[store] = {
+      if (best && bestScore >= 0.28) {
+        item.stores[storeKey] = {
           name: best.name,
           price: best.price,
-          diff: (diff >= 0 ? "+" : "") + diff.toFixed(1) + "%"
+          diff: ""
         };
       }
     }
+
+    fillDiffs(item);
 
     return item;
   });
 }
 
+function fillDiffs(item) {
+  Object.keys(item.stores || {}).forEach(storeKey => {
+    const store = item.stores[storeKey];
+
+    if (store && store.price && item.araz) {
+      const diff = ((Number(store.price) - Number(item.araz)) / Number(item.araz)) * 100;
+      store.diff = (diff >= 0 ? "+" : "") + diff.toFixed(1) + "%";
+    }
+  });
+}
+
 async function loadLiveData() {
   document.getElementById("statsBar").textContent = "Google Sheet-dən canlı data oxunur...";
+
   document.getElementById("productList").innerHTML = `
     <div class="empty">
       <div class="empty-icon">⏳</div>
       <h3>Data yüklənir...</h3>
-      <p>Google Sheet-lər oxunur</p>
+      <p>Google Sheet oxunur</p>
     </div>
   `;
 
   DEBUG = [];
 
-  const results = await Promise.all(SOURCE_SHEETS.map(s => loadSheet(s)));
-  rawStoreRows = results.flat();
+  const comparisonResult = await loadFirstWorkingSheet(SHEET_CANDIDATES.PRICECOMPARISON, "PRICECOMPARISON");
+
+  if (comparisonResult) {
+    const comparisonData = parsePriceComparison(comparisonResult);
+    DEBUG.push("PriceComparison parsed: " + comparisonData.length);
+
+    if (comparisonData.length) {
+      ALL = comparisonData;
+      rawStoreRows = flattenComparisonToStoreRows(ALL);
+      finishLoad();
+      return;
+    }
+  }
+
+  const allRows = [];
+
+  for (const storeKey of STORES_ALL) {
+    const result = await loadFirstWorkingSheet(SHEET_CANDIDATES[storeKey], storeKey);
+
+    if (result) {
+      const parsed = parseStoreSheet(result, storeKey);
+      DEBUG.push(storeKey + " parsed: " + parsed.length);
+      allRows.push(...parsed);
+    }
+  }
+
+  rawStoreRows = allRows;
+  ALL = buildComparisonFromStoreSheets(rawStoreRows);
+
+  if (!ALL.length) {
+    showDebug();
+
+    document.getElementById("statsBar").innerHTML =
+      "Məhsul tapılmadı. Sheet column adları debug paneldə göstərildi.";
+
+    document.getElementById("productList").innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">⚠️</div>
+        <h3>Məhsul tapılmadı</h3>
+        <p>Debug hissəsinin screenshot-unu göndər, column adlarına görə düzəldim.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+  finishLoad();
+}
+
+function flattenComparisonToStoreRows(items) {
+  const rows = [];
+
+  items.forEach(item => {
+    if (item.araz) {
+      rows.push({
+        store: "ARAZ",
+        name: item.name,
+        price: item.araz,
+        oldPrice: null
+      });
+    }
+
+    Object.entries(item.stores || {}).forEach(([storeKey, store]) => {
+      if (store && store.price) {
+        rows.push({
+          store: storeKey,
+          name: store.name || item.name,
+          price: store.price,
+          oldPrice: null
+        });
+      }
+    });
+  });
+
+  return rows;
+}
+
+function finishLoad() {
+  productFiltered = [...ALL];
 
   storeProducts = rawStoreRows.map(r => ({
     store: r.store,
@@ -528,22 +858,7 @@ async function loadLiveData() {
     oldPrice: r.oldPrice
   }));
 
-  ALL = buildComparison(rawStoreRows);
-  productFiltered = [...ALL];
   storeFiltered = [...storeProducts];
-
-  if (!ALL.length) {
-    showDebug();
-    document.getElementById("statsBar").innerHTML = "Məhsul tapılmadı. Sheet column adları debug paneldə göstərildi.";
-    document.getElementById("productList").innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">⚠️</div>
-        <h3>Məhsul tapılmadı</h3>
-        <p>Sheet-lərdə məhsul adı və qiymət column-ları tanınmadı. Aşağıdakı debug məlumatını mənə göndər.</p>
-      </div>
-    `;
-    return;
-  }
 
   document.getElementById("debugBox").style.display = "none";
   document.getElementById("storeCount").textContent = storeFiltered.length;
@@ -571,8 +886,10 @@ function onSearch(value) {
 function setFilter(filter, button) {
   activeFilter = filter;
   productShown = PAGE;
+
   document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
   button.classList.add("active");
+
   applyProductFilters();
 }
 
@@ -581,7 +898,9 @@ function applyProductFilters() {
     const matchesSearch = !productSearch || item.name.toLowerCase().includes(productSearch);
     if (!matchesSearch) return false;
 
-    const competitorPrices = Object.values(item.stores || {}).map(s => Number(s.price)).filter(p => p > 0);
+    const competitorPrices = Object.values(item.stores || {})
+      .map(s => Number(s.price))
+      .filter(p => p > 0);
 
     if (activeFilter === "all") return true;
     if (activeFilter === "only-araz") return competitorPrices.length === 0;
@@ -603,6 +922,7 @@ function applyProductFilters() {
 function renderProducts() {
   const productList = document.getElementById("productList");
   const prodLoadMore = document.getElementById("prodLoadMore");
+
   productList.innerHTML = "";
 
   if (!productFiltered.length) {
@@ -613,6 +933,7 @@ function renderProducts() {
         <p>Axtarışı və ya filteri dəyişib yenidən yoxlayın</p>
       </div>
     `;
+
     prodLoadMore.style.display = "none";
     return;
   }
@@ -620,16 +941,20 @@ function renderProducts() {
   productFiltered.slice(0, productShown).forEach(item => {
     const card = document.createElement("div");
     card.className = "prod-card";
+
     card.innerHTML = `
       <div class="prod-card-name">${escapeHTML(item.name)}</div>
+
       <div class="stores-row">
         ${renderStorePill("ARAZ", item.name, item.araz, item)}
+
         ${STORES_ALL.filter(s => s !== "ARAZ").map(storeKey => {
           const store = item.stores ? item.stores[storeKey] : null;
           return renderStorePill(storeKey, store ? store.name : "", store ? store.price : null, item);
         }).join("")}
       </div>
     `;
+
     productList.appendChild(card);
   });
 
@@ -637,7 +962,11 @@ function renderProducts() {
 }
 
 function renderStorePill(storeKey, productName, price, item) {
-  const allPrices = [Number(item.araz), ...Object.values(item.stores || {}).map(s => Number(s.price))].filter(p => p > 0);
+  const allPrices = [
+    Number(item.araz),
+    ...Object.values(item.stores || {}).map(s => Number(s.price))
+  ].filter(p => p > 0);
+
   const numericPrice = Number(price);
 
   if (!numericPrice) {
@@ -652,14 +981,17 @@ function renderStorePill(storeKey, productName, price, item) {
 
   const min = Math.min(...allPrices);
   const max = Math.max(...allPrices);
+
   const isCheapest = numericPrice === min && allPrices.length > 1;
   const isPriciest = numericPrice === max && allPrices.length > 1;
 
   let diffHtml = "";
+
   if (storeKey !== "ARAZ" && item.araz) {
     const diff = ((numericPrice - Number(item.araz)) / Number(item.araz)) * 100;
     const sign = diff > 0 ? "+" : "";
     const cls = diff > 0 ? "diff-pos" : "diff-neg";
+
     diffHtml = `<div class="sp-diff ${cls}">${sign}${diff.toFixed(1)}%</div>`;
   }
 
@@ -667,6 +999,7 @@ function renderStorePill(storeKey, productName, price, item) {
     <div class="store-pill ${isCheapest ? "cheapest" : ""} ${isPriciest ? "priciest" : ""}">
       ${isCheapest ? `<div class="store-badge badge-cheap">ƏN UCUZ</div>` : ""}
       ${isPriciest ? `<div class="store-badge badge-dear">ƏN BAHA</div>` : ""}
+
       <div class="sp-name">${STORE_LABELS[storeKey] || storeKey}</div>
       <div class="sp-product-name">${escapeHTML(productName || item.name)}</div>
       <div class="sp-price">${formatPrice(numericPrice)}</div>
@@ -701,8 +1034,10 @@ function applyStoreFilters() {
   storeFiltered = storeProducts.filter(item => {
     const matchesStore = activeStore === "ALL" || item.store === activeStore;
     const matchesSearch = !storeSearch || item.name.toLowerCase().includes(storeSearch);
+
     return matchesStore && matchesSearch;
   });
+
   document.getElementById("storeCount").textContent = storeFiltered.length;
   renderStoreProducts();
 }
@@ -710,6 +1045,7 @@ function applyStoreFilters() {
 function renderStoreProducts() {
   const storeList = document.getElementById("storeList");
   const storeLoadMore = document.getElementById("storeLoadMore");
+
   storeList.innerHTML = "";
 
   if (!storeFiltered.length) {
@@ -720,6 +1056,7 @@ function renderStoreProducts() {
         <p>Mağaza və ya axtarış sözünü dəyişin</p>
       </div>
     `;
+
     storeLoadMore.style.display = "none";
     return;
   }
@@ -727,11 +1064,15 @@ function renderStoreProducts() {
   storeFiltered.slice(0, storeShown).forEach(item => {
     const row = document.createElement("div");
     row.className = "store-list-item";
+
     row.innerHTML = `
       <div class="sli-name">${escapeHTML(item.name)}</div>
       <div class="sli-store">${STORE_LABELS[item.store] || item.store}</div>
-      <div class="sli-prices"><div class="sli-only-price">${formatPrice(item.price)}</div></div>
+      <div class="sli-prices">
+        <div class="sli-only-price">${formatPrice(item.price)}</div>
+      </div>
     `;
+
     storeList.appendChild(row);
   });
 
@@ -745,8 +1086,10 @@ function storeMore() {
 
 function downloadExcel(type) {
   let rows = [];
+
   if (type === "prod") {
     rows.push(["Product Name", "Araz Price", "Bravo", "Tamstore", "Rahatmarket", "Bazarstore", "Woltmarket"]);
+
     productFiltered.forEach(item => {
       rows.push([
         item.name,
@@ -760,38 +1103,58 @@ function downloadExcel(type) {
     });
   } else {
     rows.push(["Store", "Product Name", "Price"]);
-    storeFiltered.forEach(item => rows.push([item.store, item.name, item.price]));
+
+    storeFiltered.forEach(item => {
+      rows.push([item.store, item.name, item.price]);
+    });
   }
 
-  const csv = rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
-  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+  const csv = rows
+    .map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;"
+  });
+
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
   a.download = type === "prod" ? "araz-reqib-analizi.csv" : "araz-magaza-axtarisi.csv";
   a.click();
+
   URL.revokeObjectURL(url);
 }
 
 function toNumber(value) {
   if (typeof value === "number") return value;
+
   if (!value) return 0;
-  return Number(String(value).replace("₼","").replace(",",".").replace(/[^\d.]/g,"")) || 0;
+
+  const cleaned = String(value)
+    .replace("₼", "")
+    .replace(",", ".")
+    .replace(/[^\d.]/g, "");
+
+  return Number(cleaned) || 0;
 }
 
 function formatPrice(value) {
   const number = Number(value);
+
   if (!number) return "-";
+
   return number.toFixed(2) + " ₼";
 }
 
 function escapeHTML(value) {
   return String(value || "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 loadLiveData();
