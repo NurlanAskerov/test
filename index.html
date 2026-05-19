@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Araz Məhsullar</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .status {
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .product-name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .price {
+      font-size: 22px;
+      font-weight: bold;
+      color: #e30613;
+      margin-bottom: 6px;
+    }
+
+    .old-price {
+      color: #777;
+      text-decoration: line-through;
+      margin-bottom: 8px;
+    }
+
+    .discount {
+      display: inline-block;
+      background: #e30613;
+      color: white;
+      padding: 5px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .error {
+      display: none;
+      background: #ffecec;
+      color: #c00;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    button:hover {
+      background: #444;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Araz Məhsullar</h1>
+  <div class="status" id="statusText">Yüklənir...</div>
+
+  <button onclick="reloadProducts()">Yenilə</button>
+
+  <div class="error" id="errorBox"></div>
+
+  <div class="products" id="productsContainer"></div>
+
+ <script>
+  const SHEET_ID = "1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU";
+  const GID = "0";
+
+  const productsContainer = document.getElementById("productsContainer");
+  const statusText = document.getElementById("statusText");
+  const errorBox = document.getElementById("errorBox");
+
+  window.google = {
+    visualization: {
+      Query: {
+        setResponse: function (response) {
+          handleSheetResponse(response);
+        }
+      }
+    }
+  };
+
+  function loadProducts() {
+    statusText.textContent = "Google Sheet-dən oxunur...";
+    errorBox.style.display = "none";
+    errorBox.textContent = "";
+
+    const oldScript = document.getElementById("sheetScript");
+
+    if (oldScript) {
+      oldScript.remove();
+    }
+
+    const script = document.createElement("script");
+    script.id = "sheetScript";
+
+    script.src =
+      "https://docs.google.com/spreadsheets/d/" +
+      SHEET_ID +
+      "/gviz/tq?tqx=out:json&gid=" +
+      GID;
+
+    script.onerror = function () {
+      showError("Google Sheet oxunmadı. Link browser-də açılırsa, səhifəni yenilə və ya Live Server-i restart et.");
+    };
+
+    document.body.appendChild(script);
+  }
+
+  function handleSheetResponse(response) {
+    try {
+      if (!response || response.status !== "ok") {
+        showError("Google Sheet cavabında xəta var.");
+        return;
+      }
+
+      const rows = response.table.rows;
+
+      const products = rows
+        .map(row => {
+          return {
+            name: row.c[0] ? row.c[0].v : "",
+            price: row.c[1] ? row.c[1].v : "",
+            priceFormatted: row.c[1] ? row.c[1].f : "",
+            originalPrice: row.c[2] ? row.c[2].v : "",
+            originalPriceFormatted: row.c[2] ? row.c[2].f : ""
+          };
+        })
+        .filter(product => product.name);
+
+      renderProducts(products);
+
+      statusText.textContent = "Məhsul sayı: " + products.length;
+
+      localStorage.setItem("products", JSON.stringify(products));
+      localStorage.setItem(
+        "productsDate",
+        new Date().toISOString().split("T")[0]
+      );
+    } catch (error) {
+      console.error(error);
+      showError(error.message);
+    }
+  }
+
+  function renderProducts(products) {
+    productsContainer.innerHTML = "";
+
+    products.forEach(product => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      let discountHtml = "";
+
+      if (product.price && product.originalPrice) {
+        const discount = Math.round(
+          ((product.originalPrice - product.price) / product.originalPrice) * 100
+        );
+
+        if (discount > 0) {
+          discountHtml = `<div class="discount">-${discount}% endirim</div>`;
+        }
+      }
+
+      card.innerHTML = `
+        <div class="product-name">${escapeHTML(product.name)}</div>
+        <div class="price">${escapeHTML(product.priceFormatted || product.price + " ₼")}</div>
+        <div class="old-price">${escapeHTML(product.originalPriceFormatted || product.originalPrice + " ₼")}</div>
+        ${discountHtml}
+      `;
+
+      productsContainer.appendChild(card);
+    });
+  }
+
+  function reloadProducts() {
+    localStorage.removeItem("products");
+    localStorage.removeItem("productsDate");
+    loadProducts();
+  }
+
+  function showError(message) {
+    console.error(message);
+
+    errorBox.style.display = "block";
+    errorBox.textContent = message;
+    statusText.textContent = "Data oxunmadı.";
+
+    const cachedProducts = localStorage.getItem("products");
+
+    if (cachedProducts) {
+      renderProducts(JSON.parse(cachedProducts));
+      statusText.textContent = "Xəta oldu, əvvəlki data göstərildi.";
+    }
+  }
+
+  function escapeHTML(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  loadProducts();
+</script>
+</body>
+</html>
