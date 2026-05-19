@@ -1,375 +1,546 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PriceMonitor – Qiymət Müqayisəsi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
 
-  <title>Araz Məhsullar</title>
+/* NAV */
+nav{background:#fff;border-bottom:1px solid #e8e8e4;position:sticky;top:0;z-index:200;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:1.1rem;font-weight:800;color:#1a1a1a;text-decoration:none}
+.nav-logo-icon{width:36px;height:36px;background:#4caf50;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.nav-tabs{display:flex;gap:6px}
+.nav-tab{padding:8px 18px;border-radius:8px;font-weight:600;font-size:.88rem;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#666;transition:all .18s;font-family:'Inter',sans-serif}
+.nav-tab.active{background:#4caf50;color:#fff;border-color:#4caf50}
+.nav-tab:hover:not(.active){border-color:#4caf50;color:#2e7d32}
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+/* HERO */
+.hero{background:linear-gradient(160deg,#fdfcf5 0%,#f5f5e8 100%);padding:52px 32px 44px;text-align:center;border-bottom:1px solid #e8e8e0}
+.hero h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;color:#1a1a1a;margin-bottom:10px;letter-spacing:-.03em}
+.hero p{color:#888;font-size:.97rem;font-weight:500;margin-bottom:32px}
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 20px;
-      color: #222;
-    }
+/* SEARCH CARD */
+.search-card{background:#fff;border-radius:16px;padding:24px;max-width:780px;margin:0 auto;box-shadow:0 2px 16px rgba(0,0,0,.06);border:1.5px solid #ebebeb}
+.search-top{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.store-select{padding:10px 16px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:.9rem;font-family:'Inter',sans-serif;font-weight:600;color:#1a1a1a;background:#fff;cursor:pointer;outline:none;min-width:160px;transition:border-color .18s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.store-select:focus{border-color:#4caf50}
+.analyze-btn{padding:10px 22px;background:#FF8300;border:none;border-radius:10px;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:7px;transition:all .18s;white-space:nowrap}
+.analyze-btn:hover{background:#e07400;transform:translateY(-1px)}
+.stats-info{margin-left:auto;font-size:.88rem;font-weight:600;color:#888;display:flex;align-items:center;gap:12px}
+.stats-info span.count{color:#4caf50;font-weight:800}
+.excel-btn-sm{display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;color:#666;transition:all .18s;font-family:'Inter',sans-serif;white-space:nowrap}
+.excel-btn-sm:hover{border-color:#4caf50;color:#2e7d32}
+.search-input{width:100%;padding:12px 16px 12px 40px;border:1.5px solid #e8e8e4;border-radius:10px;font-size:.92rem;font-family:'Inter',sans-serif;font-weight:500;outline:none;transition:border-color .18s,box-shadow .18s;background:#fafafa;color:#1a1a1a;position:relative}
+.search-input:focus{border-color:#4caf50;background:#fff;box-shadow:0 0 0 3px rgba(76,175,80,.1)}
+.search-wrap{position:relative}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#bbb;pointer-events:none}
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
+/* PRODUCT TABS (filter row) */
+.filter-row{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+.filter-btn{padding:9px 18px;border-radius:24px;font-weight:600;font-size:.85rem;cursor:pointer;border:1.5px solid #e0e0e0;background:#fff;color:#666;transition:all .18s;font-family:'Inter',sans-serif}
+.filter-btn.active{background:#4caf50;color:#fff;border-color:#4caf50}
+.filter-btn:hover:not(.active){border-color:#4caf50;color:#2e7d32;background:#f0faf0}
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
+/* MAIN */
+.main{max-width:960px;margin:0 auto;padding:28px 24px 60px}
 
-    h1 {
-      margin: 0;
-      font-size: 28px;
-    }
+/* PRODUCT LIST ITEMS (for Məhsul tab) */
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.result-title{font-size:1rem;font-weight:800;color:#1a1a1a;display:flex;align-items:center;gap:8px}
 
-    .actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+/* Product comparison card */
+.prod-card{background:#fff;border-radius:14px;padding:18px 22px;margin-bottom:10px;border:1.5px solid #ebebeb;box-shadow:0 1px 6px rgba(0,0,0,.04);transition:box-shadow .18s,transform .18s}
+.prod-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.09);transform:translateY(-1px)}
+.prod-card-name{font-size:.95rem;font-weight:700;color:#1a1a1a;margin-bottom:14px}
+.stores-row{display:flex;gap:8px;flex-wrap:wrap}
+.store-pill{flex:1;min-width:100px;max-width:185px;border-radius:12px;padding:11px 12px;border:1.5px solid #ebebeb;background:#fafafa;position:relative;text-align:center;transition:all .18s;display:flex;flex-direction:column;justify-content:flex-start}
+.store-pill.cheapest{border-color:#4caf50;background:#f1faf2}
+.store-pill.priciest{border-color:#FF8300;background:#fff8f0}
+.store-pill.no-data{opacity:.5}
+.store-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.04em}
+.badge-cheap{background:#4caf50;color:#fff}
+.badge-dear{background:#FF8300;color:#fff}
+.sp-name{font-size:.68rem;font-weight:800;letter-spacing:.07em;color:#aaa;text-transform:uppercase;margin-bottom:5px}
+.sp-product-name{font-size:.78rem;color:#555;line-height:1.22;min-height:34px;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;hyphens:auto}
+.store-pill.cheapest .sp-name{color:#2e7d32}
+.sp-price{font-size:1.05rem;font-weight:800;color:#1a1a1a}
+.sp-price.dash{color:#ccc;font-size:1.2rem}
+.sp-diff{font-size:.75rem;font-weight:700;margin-top:2px}
+.diff-neg{color:#2e7d32}
+.diff-pos{color:#FF8300}
 
-    input {
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      min-width: 230px;
-      font-size: 14px;
-    }
+/* STORE SEARCH TAB - list style like screenshot */
+.store-search-card{background:#fff;border-radius:16px;padding:24px;max-width:960px;margin:0 auto 0;box-shadow:0 2px 16px rgba(0,0,0,.06);border:1.5px solid #ebebeb}
+.store-list-item{background:#fff;border-radius:12px;padding:0 22px;margin-bottom:8px;border:1.5px solid #ebebeb;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:space-between;min-height:68px;transition:box-shadow .18s,transform .15s}
+.store-list-item:hover{box-shadow:0 4px 18px rgba(0,0,0,.09);transform:translateY(-1px)}
+.sli-name{font-size:.95rem;font-weight:700;color:#1a1a1a;flex:1}
+.sli-store{font-size:.78rem;font-weight:700;letter-spacing:.07em;color:#888;text-transform:uppercase;margin-right:24px;min-width:80px;text-align:right}
+.sli-prices{display:flex;align-items:center;gap:8px}
+.sli-old-price{font-size:.82rem;font-weight:600;color:#bbb;text-decoration:line-through}
+.sli-new-price{font-size:1.05rem;font-weight:800;color:#4caf50;background:#f1faf2;border:1.5px solid #c8eacb;border-radius:8px;padding:6px 14px;min-width:90px;text-align:center}
+.sli-only-price{font-size:1.05rem;font-weight:800;color:#1a1a1a;background:#f5f5f5;border:1.5px solid #e0e0e0;border-radius:8px;padding:6px 14px;min-width:90px;text-align:center}
 
-    button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 10px;
-      background: #222;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-    }
+/* Load more */
+.load-more-wrap{text-align:center;margin-top:20px}
+.load-more-btn{padding:12px 36px;background:#fff;border:1.5px solid #4caf50;border-radius:10px;font-weight:700;font-size:.9rem;color:#2e7d32;cursor:pointer;font-family:'Inter',sans-serif;transition:all .18s}
+.load-more-btn:hover{background:#4caf50;color:#fff}
 
-    button:hover {
-      background: #444;
-    }
+/* Empty state */
+.empty{text-align:center;padding:56px 20px;color:#aaa}
+.empty-icon{font-size:2.8rem;margin-bottom:12px}
+.empty h3{font-size:1rem;font-weight:800;margin-bottom:6px;color:#888}
 
-    .status {
-      margin-bottom: 18px;
-      color: #555;
-      font-size: 14px;
-    }
+/* Tabs */
+.tab-content{display:none}
+.tab-content.active{display:block}
 
-    .error {
-      display: none;
-      background: #ffecec;
-      color: #c00000;
-      padding: 12px 14px;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
+/* Stats bar */
+.stats-bar{font-size:.85rem;color:#aaa;font-weight:600;margin-top:10px}
+.stats-bar b{color:#4caf50;font-weight:800}
 
-    .products {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-      min-height: 175px;
-    }
-
-    .product-name {
-      font-size: 16px;
-      font-weight: bold;
-      line-height: 1.4;
-      margin-bottom: 14px;
-    }
-
-    .price {
-      font-size: 24px;
-      font-weight: bold;
-      color: #e30613;
-      margin-bottom: 6px;
-    }
-
-    .old-price {
-      color: #777;
-      text-decoration: line-through;
-      margin-bottom: 10px;
-      font-size: 15px;
-    }
-
-    .discount {
-      display: inline-block;
-      background: #e30613;
-      color: white;
-      padding: 6px 9px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .empty {
-      background: white;
-      border-radius: 14px;
-      padding: 18px;
-      color: #555;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 14px;
-      }
-
-      h1 {
-        font-size: 23px;
-      }
-
-      input,
-      button {
-        width: 100%;
-      }
-
-      .actions {
-        width: 100%;
-      }
-    }
-  </style>
+@media(max-width:640px){
+  nav{padding:0 16px}
+  .hero{padding:36px 16px 32px}
+  .search-card,.store-search-card{padding:16px}
+  .main{padding:20px 12px 40px}
+  .sli-store{display:none}
+  .store-pill{min-width:80px}
+  .search-top{flex-direction:column;align-items:stretch}
+  .stats-info{margin-left:0}
+}
+</style>
 </head>
-
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Araz Məhsullar</h1>
 
-      <div class="actions">
-        <input
-          id="searchInput"
-          type="text"
-          placeholder="Məhsul axtar..."
-          oninput="filterProducts()"
-        />
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">📊</div>
+    PriceMonitor
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('products',this)">Məhsul Qiymətləri</button>
+    <button class="nav-tab" onclick="switchTab('stores',this)">Mağaza Axtarışı</button>
+  </div>
+</nav>
 
-        <button onclick="reloadProducts()">
-          Yenilə
+<!-- TAB 1: Məhsul Qiymətləri -->
+<div id="tab-products" class="tab-content active">
+  <div class="hero">
+    <h1>Qiymət Müqayisəsi</h1>
+    <p>Məhsul adı daxil edərək bütün mağazalardakı qiymətləri müqayisə edin</p>
+    <div class="search-card">
+      <div class="search-wrap" style="margin-bottom:14px">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-input" type="text" id="searchInput" placeholder="Məsələn: spagetti, çörək, süd..." oninput="onSearch(this.value)">
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">Hamısı</button>
+        <button class="filter-btn" onclick="setFilter('cheaper',this)">↘ Arazda ucuz</button>
+        <button class="filter-btn" onclick="setFilter('pricier',this)">↗ Arazda baha</button>
+        <button class="filter-btn" onclick="setFilter('only-araz',this)">Yalnız Arazda</button>
+      </div>
+      <div class="stats-bar" id="statsBar"></div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="result-header">
+      <div class="result-title">
+        <span id="resultsTitleTxt">Nəticələr</span>
+      </div>
+      <button class="excel-btn-sm" onclick="downloadExcel('prod')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel
+      </button>
+    </div>
+    <div id="productList"></div>
+    <div class="load-more-wrap" id="prodLoadMore" style="display:none">
+      <button class="load-more-btn" onclick="prodMore()">Daha çox göstər</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: Mağaza Axtarışı -->
+<div id="tab-stores" class="tab-content">
+  <div class="hero">
+    <h1>Mağaza Məhsul Axtarışı</h1>
+    <p>Seçilmiş mağazada məhsul axtarın</p>
+    <div class="store-search-card">
+      <div class="search-top">
+        <select class="store-select" id="storeSelect" onchange="onStoreChange()">
+          <option value="ALL">Bütün mağazalar</option>
+          <option value="ARAZ">Araz</option>
+          <option value="BRAVO">Bravo</option>
+          <option value="TAMSTORE">Tamstore</option>
+          <option value="RAHATMARKET">Rahatmarket</option>
+          <option value="BAZARSTORE">Bazarstore</option>
+          <option value="WOLTMARKET">Woltmarket</option>
+        </select>
+        <button class="analyze-btn" onclick="analyzeStore()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Kataloqnu Analiz Et
         </button>
+        <div class="stats-info">
+          <span><span class="count" id="storeCount">0</span> məhsul yükləndi</span>
+          <button class="excel-btn-sm" onclick="downloadExcel('store')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Excel
+          </button>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-input" type="text" id="storeSearchInput" placeholder="Məhsul adı ilə axtarın..." oninput="onStoreSearch(this.value)">
       </div>
     </div>
-
-    <div class="status" id="statusText">Yüklənir...</div>
-
-    <div class="error" id="errorBox"></div>
-
-    <div class="products" id="productsContainer"></div>
   </div>
+  <div class="main">
+    <div id="storeList"></div>
+    <div class="load-more-wrap" id="storeLoadMore" style="display:none">
+      <button class="load-more-btn" onclick="storeMore()">Daha çox göstər</button>
+    </div>
+  </div>
+</div>
 
-  <script>
-    const SHEET_URL =
-      "https://docs.google.com/spreadsheets/d/1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU/gviz/tq?tqx=out:json&gid=0";
+<script>
+const STORES_ALL = ['ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET'];
+const STORE_LABELS={'ARAZ':'ARAZ','BRAVO':'BRAVO','TAMSTORE':'TAMSTORE','RAHATMARKET':'RAHAT','BAZARSTORE':'BAZARSTORE','WOLTMARKET':'WOLT'};
+const PAGE = 30;
+let ALL = [];
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU/gviz/tq?tqx=out:json&gid=0';
 
-    const productsContainer = document.getElementById("productsContainer");
-    const statusText = document.getElementById("statusText");
-    const errorBox = document.getElementById("errorBox");
-    const searchInput = document.getElementById("searchInput");
+// Google Sheet data loader. Dizayn və aşağıdakı render/filter funksiyaları eyni qalır;
+// sadəcə statik const ALL əvəzinə Sheet-dən ALL array hazırlanır.
+window.google = window.google || {};
+window.google.visualization = window.google.visualization || {};
+window.google.visualization.Query = window.google.visualization.Query || {};
+window.google.visualization.Query.setResponse = function(response){
+  try{
+    if(!response || response.status !== 'ok' || !response.table){
+      throw new Error('Google Sheet cavabı düzgün deyil');
+    }
+    ALL = sheetResponseToAll(response);
+    f_page = 0;
+    s_page = 0;
+    s_loaded = false;
+    applyFilters();
+    buildStoreFiltered();
+  }catch(err){
+    console.error(err);
+    document.getElementById('productList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Data oxunmadı</h3><p>'+escapeHtml(String(err.message || err))+'</p></div>';
+    document.getElementById('statsBar').innerHTML = '<b>0</b> məhsul mövcuddur';
+    document.getElementById('resultsTitleTxt').textContent = 'Nəticələr (0)';
+  }
+};
 
-    let allProducts = [];
+function loadSheetData(){
+  document.getElementById('productList').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><h3>Yüklənir</h3><p>Google Sheet-dən məlumatlar oxunur...</p></div>';
+  const old = document.getElementById('sheetDataScript');
+  if(old) old.remove();
+  const script = document.createElement('script');
+  script.id = 'sheetDataScript';
+  script.src = SHEET_URL + '&cacheBust=' + Date.now();
+  script.onerror = function(){
+    document.getElementById('productList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Google Sheet oxunmadı</h3><p>Bu kompüter və ya şəbəkə Google Sheet request-ini bloklaya bilər.</p></div>';
+    document.getElementById('statsBar').innerHTML = '<b>0</b> məhsul mövcuddur';
+    document.getElementById('resultsTitleTxt').textContent = 'Nəticələr (0)';
+  };
+  document.body.appendChild(script);
+}
 
-    window.google = {
-      visualization: {
-        Query: {
-          setResponse: function (response) {
-            handleSheetResponse(response);
-          }
+function sheetResponseToAll(response){
+  const cols = (response.table.cols || []).map((c, i) => cleanHeader(c.label || c.id || ('col'+i)));
+  const rows = response.table.rows || [];
+  return rows.map(row => {
+    const obj = {};
+    cols.forEach((h, i) => {
+      const cell = row.c && row.c[i] ? row.c[i] : null;
+      obj[h] = cell ? cell.v : '';
+      obj[h + ' formatted'] = cell && cell.f ? cell.f : '';
+    });
+    return rowObjectToProduct(obj);
+  }).filter(p => p && p.name && p.araz !== null && p.araz !== undefined && !Number.isNaN(p.araz));
+}
+
+function rowObjectToProduct(obj){
+  // Əgər Sheet-də hazır JSON/object saxlanılıbsa, onu birbaşa qəbul edir.
+  const jsonValue = pick(obj, ['json','data','all','object']);
+  if(typeof jsonValue === 'string' && jsonValue.trim().startsWith('{')){
+    try{
+      const parsed = JSON.parse(jsonValue);
+      if(parsed && parsed.name && parsed.araz !== undefined && parsed.stores){
+        parsed.araz = toNum(parsed.araz);
+        normalizeStores(parsed.stores, parsed.araz);
+        return parsed;
+      }
+    }catch(e){}
+  }
+
+  const name = pick(obj, ['name','product name','product','məhsul','mehsul','məhsul adı','mehsul adi','araz name','araz product name']);
+  const araz = toNum(pick(obj, ['araz','araz price','araz qiymət','araz qiymet','price','qiymət','qiymet']));
+  const stores = {};
+
+  STORES_ALL.filter(s => s !== 'ARAZ').forEach(store => {
+    const lower = store.toLowerCase();
+    const price = toNum(pick(obj, [
+      lower, lower+' price', lower+' qiymət', lower+' qiymet', lower+'_price', lower+'price', store, store+' Price', store+' Qiymət', store+' Qiymet'
+    ]));
+    const storeName = pick(obj, [
+      lower+' name', lower+' product', lower+' product name', lower+'_name', lower+'_product', store+' Name', store+' Product Name'
+    ]) || name;
+    let diff = pick(obj, [lower+' diff', lower+'_diff', lower+' fərq', lower+' ferq', store+' Diff', store+' Fərq', store+' Ferq']);
+    if(price !== null && price !== undefined && !Number.isNaN(price)){
+      if(!diff && araz){
+        diff = ((price - araz) / araz * 100).toFixed(1) + '%';
+        if(!diff.startsWith('-')) diff = '+' + diff;
+      }
+      stores[store] = {name: storeName, price, diff: diff || ''};
+    }
+  });
+
+  // Əgər Sheet-də stores sütunu JSON kimi saxlanılıbsa: {"BRAVO":{"name":"...","price":1.2,"diff":"+5%"}}
+  const storesValue = pick(obj, ['stores','store data','competitors','rəqiblər','reqibler']);
+  if(typeof storesValue === 'string' && storesValue.trim().startsWith('{')){
+    try{
+      const parsedStores = JSON.parse(storesValue);
+      Object.assign(stores, parsedStores);
+      normalizeStores(stores, araz);
+    }catch(e){}
+  }
+
+  return {name, araz, stores};
+}
+
+function normalizeStores(stores, araz){
+  Object.keys(stores || {}).forEach(k => {
+    if(stores[k]){
+      stores[k].price = toNum(stores[k].price);
+      if(!stores[k].diff && araz && stores[k].price !== null){
+        let d = ((stores[k].price - araz) / araz * 100).toFixed(1) + '%';
+        if(!d.startsWith('-')) d = '+' + d;
+        stores[k].diff = d;
+      }
+    }
+  });
+}
+
+function pick(obj, names){
+  for(const name of names){
+    const key = Object.keys(obj).find(k => cleanHeader(k) === cleanHeader(name));
+    if(key && obj[key] !== null && obj[key] !== undefined && obj[key] !== '') return obj[key];
+  }
+  return '';
+}
+
+function cleanHeader(v){
+  return String(v || '').trim().toLowerCase().replace(/\s+/g,' ');
+}
+
+function toNum(v){
+  if(v === null || v === undefined || v === '') return null;
+  if(typeof v === 'number') return v;
+  const n = Number(String(v).replace('₼','').replace('%','').replace(',', '.').replace(/[^0-9.\-]/g,''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function escapeHtml(v){
+  return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ---- TAB 1: Product comparison ----
+let f_filter='all', f_search='', f_page=0, f_filtered=[];
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+  if(tab==='stores') initStoreTab();
+}
+
+function onSearch(v){ f_search=v.trim().toLowerCase(); f_page=0; applyFilters(); }
+function setFilter(f,btn){
+  f_filter=f; f_page=0;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function hasComparableStores(p){
+  return Object.values(p.stores).some(s=>s && s.price!==null && s.price!==undefined);
+}
+
+function matchesSearch(p, q){
+  if(!q) return true;
+  q=q.toLowerCase();
+  if((p.name||'').toLowerCase().includes(q)) return true;
+  return Object.values(p.stores).some(s => (s.name||'').toLowerCase().includes(q));
+}
+
+function getProductTitle(p){
+  const names=[p.name];
+  STORES_ALL.filter(s=>s!=='ARAZ').forEach(s=>{
+    const item=p.stores[s];
+    if(item && item.name && !names.includes(item.name)) names.push(item.name);
+  });
+  return names.join(' / ');
+}
+
+function applyFilters(){
+  let r=ALL.filter(p=>hasComparableStores(p)); // müqayisəyə yararsız olanlar çıxarılır
+  if(f_search) r=r.filter(p=>matchesSearch(p, f_search));
+  // diff faizi rəqib mağazanın Araz ilə müqayisəsidir:
+  // diff '+' = rəqib Arazdan baha → Arazda UCUZ
+  // diff '-' = rəqib Arazdan ucuz → Arazda BAHA
+  if(f_filter==='cheaper') r=r.filter(p=>Object.values(p.stores).some(s=>s.diff&&String(s.diff).startsWith('+')));
+  else if(f_filter==='pricier') r=r.filter(p=>Object.values(p.stores).some(s=>s.diff&&String(s.diff).startsWith('-')));
+  else if(f_filter==='only-araz') r=r.filter(p=>!hasComparableStores(p));
+  f_filtered=r;
+  document.getElementById('statsBar').innerHTML='<b>'+r.length+'</b> məhsul mövcuddur';
+  document.getElementById('resultsTitleTxt').textContent='Nəticələr ('+r.length+')';
+  renderProd();
+}
+
+function renderProd(){
+  const list=document.getElementById('productList');
+  const page=f_filtered.slice(0,(f_page+1)*PAGE);
+  list.innerHTML=page.length===0
+    ?'<div class="empty"><div class="empty-icon">🔍</div><h3>Məhsul tapılmadı</h3><p>Başqa açar söz sınayın</p></div>'
+    :page.map(p=>prodCard(p)).join('');
+  document.getElementById('prodLoadMore').style.display=f_filtered.length>(f_page+1)*PAGE?'block':'none';
+}
+
+function prodMore(){ f_page++; renderProd(); }
+
+function prodCard(p){
+  const sKeys=Object.keys(p.stores);
+  let minP=p.araz, maxP=p.araz;
+  sKeys.forEach(k=>{ const pr=p.stores[k].price; if(pr<minP)minP=pr; if(pr>maxP)maxP=pr; });
+
+  const pills=STORES_ALL.map(s=>{
+    if(s==='ARAZ'){
+      const cheap=p.araz<=minP&&sKeys.length>0;
+      const dear=p.araz>=maxP&&sKeys.length>0&&p.araz>minP;
+      let cls=cheap?'cheapest':dear?'priciest':'';
+      let badge=cheap?'<div class="store-badge badge-cheap">Ən Ucuz</div>':dear?'<div class="store-badge badge-dear">Ən Baha</div>':'';
+      return `<div class="store-pill ${cls}" style="padding-top:${badge?'20px':'11px'}">
+        ${badge}<div class="sp-name">ARAZ</div>
+        <div class="sp-product-name">${p.name}</div>
+        <div class="sp-price">${p.araz.toFixed(2)} ₼</div>
+      </div>`;
+    }
+    if(!p.stores[s]) return `<div class="store-pill no-data">
+      <div class="sp-name">${STORE_LABELS[s]||s}</div>
+      <div class="sp-price dash">–</div>
+    </div>`;
+    const sd=p.stores[s];
+    const ch=sd.price<=minP;
+    const dr=sd.price>=maxP&&sd.price>p.araz;
+    let cls2=ch?'cheapest':dr?'priciest':'';
+    let badge2=ch?'<div class="store-badge badge-cheap">Ən Ucuz</div>':dr?'<div class="store-badge badge-dear">Ən Baha</div>':'';
+    const lbl=STORE_LABELS[s]||s;
+    // diff '+' = rəqib baha (Araz ucuzdur) → yaşıl göstər
+    // diff '-' = rəqib ucuz (Araz bahadır) → narıncı göstər
+    const isPos=sd.diff&&sd.diff.startsWith('+');
+    return `<div class="store-pill ${cls2}" style="padding-top:${badge2?'20px':'11px'}">
+      ${badge2}<div class="sp-name">${lbl}</div>
+      <div class="sp-product-name">${sd.name||p.name}</div>
+      <div class="sp-price">${sd.price.toFixed(2)} ₼</div>
+      ${sd.diff?`<div class="sp-diff ${isPos?'diff-neg':'diff-pos'}">${sd.diff}</div>`:''}
+    </div>`;
+  }).join('');
+
+  return `<div class="prod-card">
+    <div class="prod-card-name">${p.name}</div>
+    <div class="stores-row">${pills}</div>
+  </div>`;
+}
+
+// ---- TAB 2: Store search ----
+let s_store='ALL', s_search='', s_page=0, s_filtered=[], s_loaded=false;
+
+function initStoreTab(){
+  if(!s_loaded){ buildStoreFiltered(); s_loaded=true; }
+}
+
+function onStoreChange(){ s_store=document.getElementById('storeSelect').value; }
+
+function analyzeStore(){
+  s_store=document.getElementById('storeSelect').value;
+  s_search=document.getElementById('storeSearchInput').value.trim().toLowerCase();
+  s_page=0;
+  buildStoreFiltered();
+}
+
+function onStoreSearch(v){ s_search=v.trim().toLowerCase(); s_page=0; buildStoreFiltered(); }
+
+function buildStoreFiltered(){
+  s_store=document.getElementById('storeSelect').value;
+  let rows=[];
+  ALL.forEach(p=>{
+    if((s_store==='ALL'||s_store==='ARAZ') && p.araz!==null && p.araz!==undefined){
+      if(!s_search||(p.name||'').toLowerCase().includes(s_search)){
+        rows.push({name:p.name,store:'ARAZ',price:p.araz,oldPrice:null});
+      }
+    }
+    const stores=s_store==='ALL'?['BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET']:(s_store!=='ARAZ'?[s_store]:[]);
+    stores.forEach(st=>{
+      const item=p.stores[st];
+      if(item && item.price!==null && item.price!==undefined){
+        const sn=item.name||p.name;
+        if(!s_search||sn.toLowerCase().includes(s_search)||(p.name||'').toLowerCase().includes(s_search)){
+          rows.push({name:sn,store:st,price:item.price,oldPrice:null,arazName:p.name,arazPrice:p.araz});
         }
       }
-    };
+    });
+  });
+  s_filtered=rows;
+  document.getElementById('storeCount').textContent=rows.length.toLocaleString();
+  renderStore();
+}
 
-    function loadProducts() {
-      hideError();
-      statusText.textContent = "Google Sheet-dən data oxunur...";
+function renderStore(){
+  const list=document.getElementById('storeList');
+  const page=s_filtered.slice(0,(s_page+1)*PAGE);
+  list.innerHTML=page.length===0
+    ?'<div class="empty"><div class="empty-icon">🏪</div><h3>Məhsul tapılmadı</h3><p>Mağaza seçin və axtarış edin</p></div>'
+    :page.map(r=>storeItem(r)).join('');
+  document.getElementById('storeLoadMore').style.display=s_filtered.length>(s_page+1)*PAGE?'block':'none';
+}
 
-      const oldScript = document.getElementById("sheetScript");
+function storeMore(){ s_page++; renderStore(); }
 
-      if (oldScript) {
-        oldScript.remove();
-      }
+function storeItem(r){
+  const priceHtml=r.oldPrice
+    ?`<div class="sli-prices"><span class="sli-old-price">${r.oldPrice.toFixed(2)} ₼</span><div class="sli-new-price">${r.price.toFixed(2)} ₼</div></div>`
+    :`<div class="sli-prices"><div class="sli-only-price">${r.price.toFixed(2)} ₼</div></div>`;
+  return `<div class="store-list-item">
+    <div class="sli-name">${r.name}</div>
+    <div class="sli-store">${r.store}</div>
+    ${priceHtml}
+  </div>`;
+}
 
-      const script = document.createElement("script");
-      script.id = "sheetScript";
-      script.src = SHEET_URL + "&cacheBust=" + Date.now();
+function downloadExcel(tab){
+  let rows,hdr;
+  if(tab==='prod'){
+    hdr=['Məhsul','ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET','BRAVO Fərq','TAMSTORE Fərq','RAHATMARKET Fərq','BAZARSTORE Fərq','WOLTMARKET Fərq'];
+    rows=f_filtered.slice(0,5000).map(p=>[p.name,p.araz,p.stores.BRAVO?.price??'',p.stores.TAMSTORE?.price??'',p.stores.RAHATMARKET?.price??'',p.stores.BAZARSTORE?.price??'',p.stores.WOLTMARKET?.price??'',p.stores.BRAVO?.diff??'',p.stores.TAMSTORE?.diff??'',p.stores.RAHATMARKET?.diff??'',p.stores.BAZARSTORE?.diff??'',p.stores.WOLTMARKET?.diff??'']);
+  } else {
+    hdr=['Məhsul','Mağaza','Qiymət','Köhnə Qiymət'];
+    rows=s_filtered.slice(0,5000).map(r=>[r.name,r.store,r.price,r.oldPrice??'']);
+  }
+  const csv=[hdr,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='export.csv';a.click();
+}
 
-      script.onerror = function () {
-        showError("Google Sheet oxunmadı. Bu kompüter/şəbəkə Google Sheet request-ini bloklaya bilər.");
-        statusText.textContent = "Data oxunmadı.";
-      };
-
-      document.body.appendChild(script);
-    }
-
-    function handleSheetResponse(response) {
-      try {
-        if (!response || response.status !== "ok") {
-          showError("Google Sheet cavabında xəta var.");
-          statusText.textContent = "Data oxunmadı.";
-          return;
-        }
-
-        const rows = response.table.rows || [];
-
-        allProducts = rows
-          .map(row => {
-            return {
-              productName: row.c[0] ? row.c[0].v : "",
-              price: row.c[1] ? row.c[1].v : "",
-              priceFormatted: row.c[1] ? row.c[1].f : "",
-              originalPrice: row.c[2] ? row.c[2].v : "",
-              originalPriceFormatted: row.c[2] ? row.c[2].f : ""
-            };
-          })
-          .filter(product => product.productName);
-
-        renderProducts(allProducts);
-
-        statusText.textContent = "Məhsul sayı: " + allProducts.length;
-      } catch (error) {
-        console.error(error);
-        showError(error.message);
-        statusText.textContent = "Data oxunmadı.";
-      }
-    }
-
-    function renderProducts(products) {
-      productsContainer.innerHTML = "";
-
-      if (!products.length) {
-        productsContainer.innerHTML =
-          '<div class="empty">Məhsul tapılmadı.</div>';
-        return;
-      }
-
-      products.forEach(product => {
-        const price = toNumber(product.price);
-        const originalPrice = toNumber(product.originalPrice);
-
-        let discountHtml = "";
-
-        if (price > 0 && originalPrice > 0 && originalPrice > price) {
-          const discount = Math.round(
-            ((originalPrice - price) / originalPrice) * 100
-          );
-
-          discountHtml = `<div class="discount">-${discount}% endirim</div>`;
-        }
-
-        const card = document.createElement("div");
-        card.className = "card";
-
-        card.innerHTML = `
-          <div class="product-name">${escapeHTML(product.productName)}</div>
-
-          <div class="price">
-            ${escapeHTML(product.priceFormatted || formatPrice(price))}
-          </div>
-
-          ${
-            originalPrice > 0
-              ? `<div class="old-price">${escapeHTML(product.originalPriceFormatted || formatPrice(originalPrice))}</div>`
-              : ""
-          }
-
-          ${discountHtml}
-        `;
-
-        productsContainer.appendChild(card);
-      });
-    }
-
-    function filterProducts() {
-      const searchText = searchInput.value.toLowerCase().trim();
-
-      if (!searchText) {
-        renderProducts(allProducts);
-        statusText.textContent = "Məhsul sayı: " + allProducts.length;
-        return;
-      }
-
-      const filtered = allProducts.filter(product =>
-        product.productName.toLowerCase().includes(searchText)
-      );
-
-      renderProducts(filtered);
-      statusText.textContent = "Axtarış nəticəsi: " + filtered.length + " məhsul";
-    }
-
-    function reloadProducts() {
-      loadProducts();
-    }
-
-    function toNumber(value) {
-      if (typeof value === "number") {
-        return value;
-      }
-
-      if (!value) {
-        return 0;
-      }
-
-      return Number(
-        String(value)
-          .replace("₼", "")
-          .replace(",", ".")
-          .replace(/[^\d.]/g, "")
-      ) || 0;
-    }
-
-    function formatPrice(value) {
-      const number = toNumber(value);
-
-      if (!number) {
-        return "";
-      }
-
-      return number.toFixed(2) + " ₼";
-    }
-
-    function showError(message) {
-      errorBox.style.display = "block";
-      errorBox.textContent = message;
-    }
-
-    function hideError() {
-      errorBox.style.display = "none";
-      errorBox.textContent = "";
-    }
-
-    function escapeHTML(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    loadProducts();
-  </script>
+// Init
+loadSheetData();
+</script>
 </body>
 </html>
