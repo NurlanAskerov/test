@@ -207,148 +207,317 @@ nav{background:#fff;border-bottom:1px solid #e8e8e4;position:sticky;top:0;z-inde
 </div>
 
 <script>
-const STORES_ALL = ['ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET'];
-const STORE_LABELS={'ARAZ':'ARAZ','BRAVO':'BRAVO','TAMSTORE':'TAMSTORE','RAHATMARKET':'RAHAT','BAZARSTORE':'BAZARSTORE','WOLTMARKET':'WOLT'};
-const PAGE = 30;
-let ALL = [];
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU/gviz/tq?tqx=out:json&gid=0';
+/*
+  PriceMonitor live version
+  Data source: Google Sheets gviz JSONP
+  Spreadsheet: Market Prices
+*/
+const SPREADSHEET_ID = '1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU';
 
-// Google Sheet data loader. Dizayn və aşağıdakı render/filter funksiyaları eyni qalır;
-// sadəcə statik const ALL əvəzinə Sheet-dən ALL array hazırlanır.
-window.google = window.google || {};
-window.google.visualization = window.google.visualization || {};
-window.google.visualization.Query = window.google.visualization.Query || {};
-window.google.visualization.Query.setResponse = function(response){
-  try{
-    if(!response || response.status !== 'ok' || !response.table){
-      throw new Error('Google Sheet cavabı düzgün deyil');
-    }
-    ALL = sheetResponseToAll(response);
-    f_page = 0;
-    s_page = 0;
-    s_loaded = false;
-    applyFilters();
-    buildStoreFiltered();
-  }catch(err){
-    console.error(err);
-    document.getElementById('productList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Data oxunmadı</h3><p>'+escapeHtml(String(err.message || err))+'</p></div>';
-    document.getElementById('statsBar').innerHTML = '<b>0</b> məhsul mövcuddur';
-    document.getElementById('resultsTitleTxt').textContent = 'Nəticələr (0)';
-  }
+const SHEET_NAMES = {
+  PRICE_COMPARISON: 'PriceComparison',
+  ARAZ: 'Arazmarket',
+  BRAVO: 'Bravo',
+  TAMSTORE: 'Tamstore',
+  RAHATMARKET: 'Rahatmarket',
+  BAZARSTORE: 'Bazarstore',
+  WOLTMARKET: 'WoltMarket'
 };
 
-function loadSheetData(){
-  document.getElementById('productList').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><h3>Yüklənir</h3><p>Google Sheet-dən məlumatlar oxunur...</p></div>';
-  const old = document.getElementById('sheetDataScript');
-  if(old) old.remove();
-  const script = document.createElement('script');
-  script.id = 'sheetDataScript';
-  script.src = SHEET_URL + '&cacheBust=' + Date.now();
-  script.onerror = function(){
-    document.getElementById('productList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Google Sheet oxunmadı</h3><p>Bu kompüter və ya şəbəkə Google Sheet request-ini bloklaya bilər.</p></div>';
-    document.getElementById('statsBar').innerHTML = '<b>0</b> məhsul mövcuddur';
-    document.getElementById('resultsTitleTxt').textContent = 'Nəticələr (0)';
-  };
-  document.body.appendChild(script);
+const STORES_ALL = ['ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET'];
+const STORE_LABELS = {
+  ARAZ: 'ARAZ',
+  BRAVO: 'BRAVO',
+  TAMSTORE: 'TAMSTORE',
+  RAHATMARKET: 'RAHAT',
+  BAZARSTORE: 'BAZARSTORE',
+  WOLTMARKET: 'WOLT'
+};
+const PAGE = 30;
+
+let ALL = [];
+let STORE_ROWS = [];
+let SHEET_DEBUG = [];
+
+// ---- utility ----
+function norm(v){
+  return String(v || '')
+    .toLowerCase()
+    .trim()
+    .replaceAll('ə','e')
+    .replaceAll('ı','i')
+    .replaceAll('ö','o')
+    .replaceAll('ü','u')
+    .replaceAll('ğ','g')
+    .replaceAll('ç','c')
+    .replaceAll('ş','s')
+    .replace(/[^a-z0-9]+/g, '');
 }
-
-function sheetResponseToAll(response){
-  const cols = (response.table.cols || []).map((c, i) => cleanHeader(c.label || c.id || ('col'+i)));
-  const rows = response.table.rows || [];
-  return rows.map(row => {
-    const obj = {};
-    cols.forEach((h, i) => {
-      const cell = row.c && row.c[i] ? row.c[i] : null;
-      obj[h] = cell ? cell.v : '';
-      obj[h + ' formatted'] = cell && cell.f ? cell.f : '';
-    });
-    return rowObjectToProduct(obj);
-  }).filter(p => p && p.name && p.araz !== null && p.araz !== undefined && !Number.isNaN(p.araz));
-}
-
-function rowObjectToProduct(obj){
-  // Əgər Sheet-də hazır JSON/object saxlanılıbsa, onu birbaşa qəbul edir.
-  const jsonValue = pick(obj, ['json','data','all','object']);
-  if(typeof jsonValue === 'string' && jsonValue.trim().startsWith('{')){
-    try{
-      const parsed = JSON.parse(jsonValue);
-      if(parsed && parsed.name && parsed.araz !== undefined && parsed.stores){
-        parsed.araz = toNum(parsed.araz);
-        normalizeStores(parsed.stores, parsed.araz);
-        return parsed;
-      }
-    }catch(e){}
-  }
-
-  const name = pick(obj, ['name','product name','product','məhsul','mehsul','məhsul adı','mehsul adi','araz name','araz product name']);
-  const araz = toNum(pick(obj, ['araz','araz price','araz qiymət','araz qiymet','price','qiymət','qiymet']));
-  const stores = {};
-
-  STORES_ALL.filter(s => s !== 'ARAZ').forEach(store => {
-    const lower = store.toLowerCase();
-    const price = toNum(pick(obj, [
-      lower, lower+' price', lower+' qiymət', lower+' qiymet', lower+'_price', lower+'price', store, store+' Price', store+' Qiymət', store+' Qiymet'
-    ]));
-    const storeName = pick(obj, [
-      lower+' name', lower+' product', lower+' product name', lower+'_name', lower+'_product', store+' Name', store+' Product Name'
-    ]) || name;
-    let diff = pick(obj, [lower+' diff', lower+'_diff', lower+' fərq', lower+' ferq', store+' Diff', store+' Fərq', store+' Ferq']);
-    if(price !== null && price !== undefined && !Number.isNaN(price)){
-      if(!diff && araz){
-        diff = ((price - araz) / araz * 100).toFixed(1) + '%';
-        if(!diff.startsWith('-')) diff = '+' + diff;
-      }
-      stores[store] = {name: storeName, price, diff: diff || ''};
-    }
-  });
-
-  // Əgər Sheet-də stores sütunu JSON kimi saxlanılıbsa: {"BRAVO":{"name":"...","price":1.2,"diff":"+5%"}}
-  const storesValue = pick(obj, ['stores','store data','competitors','rəqiblər','reqibler']);
-  if(typeof storesValue === 'string' && storesValue.trim().startsWith('{')){
-    try{
-      const parsedStores = JSON.parse(storesValue);
-      Object.assign(stores, parsedStores);
-      normalizeStores(stores, araz);
-    }catch(e){}
-  }
-
-  return {name, araz, stores};
-}
-
-function normalizeStores(stores, araz){
-  Object.keys(stores || {}).forEach(k => {
-    if(stores[k]){
-      stores[k].price = toNum(stores[k].price);
-      if(!stores[k].diff && araz && stores[k].price !== null){
-        let d = ((stores[k].price - araz) / araz * 100).toFixed(1) + '%';
-        if(!d.startsWith('-')) d = '+' + d;
-        stores[k].diff = d;
-      }
-    }
-  });
-}
-
-function pick(obj, names){
-  for(const name of names){
-    const key = Object.keys(obj).find(k => cleanHeader(k) === cleanHeader(name));
-    if(key && obj[key] !== null && obj[key] !== undefined && obj[key] !== '') return obj[key];
-  }
-  return '';
-}
-
-function cleanHeader(v){
-  return String(v || '').trim().toLowerCase().replace(/\s+/g,' ');
-}
-
-function toNum(v){
-  if(v === null || v === undefined || v === '') return null;
-  if(typeof v === 'number') return v;
-  const n = Number(String(v).replace('₼','').replace('%','').replace(',', '.').replace(/[^0-9.\-]/g,''));
+function cleanText(v){ return String(v ?? '').trim(); }
+function toNumber(v){
+  if (typeof v === 'number') return v;
+  if (v === null || v === undefined || v === '') return null;
+  const s = String(v).replace('₼','').replace(/\s/g,'').replace(',', '.').replace(/[^0-9.\-]/g,'');
+  const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
+function formatPrice(v){
+  const n = toNumber(v);
+  return n === null ? '–' : n.toFixed(2) + ' ₼';
+}
+function calcDiff(araz, other){
+  const a = toNumber(araz), o = toNumber(other);
+  if (a === null || o === null || a === 0) return '';
+  const pct = ((o - a) / a) * 100;
+  const rounded = Math.round(pct * 10) / 10;
+  return (rounded > 0 ? '+' : '') + rounded.toFixed(1) + '%';
+}
+function escapeHTML(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
+}
+function setStatus(msg){
+  const el = document.getElementById('statsBar');
+  if (el) el.innerHTML = msg;
+}
+function showProductMessage(icon, title, body){
+  document.getElementById('productList').innerHTML = `<div class="empty"><div class="empty-icon">${icon}</div><h3>${title}</h3><p>${body || ''}</p></div>`;
+  document.getElementById('prodLoadMore').style.display = 'none';
+}
 
-function escapeHtml(v){
-  return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+// ---- Google Sheet JSONP loader ----
+function loadSheet(sheetName){
+  return new Promise((resolve, reject) => {
+    const callbackName = 'pmSheetCb_' + Math.random().toString(36).slice(2) + Date.now();
+    const script = document.createElement('script');
+    const url = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID +
+      '/gviz/tq?sheet=' + encodeURIComponent(sheetName) +
+      '&tqx=out:json;responseHandler:' + callbackName +
+      '&tq=' + encodeURIComponent('select *') +
+      '&_=' + Date.now();
+
+    window[callbackName] = function(response){
+      try {
+        delete window[callbackName];
+        script.remove();
+        if (!response || response.status !== 'ok') {
+          reject(new Error(sheetName + ' cavab statusu ok deyil'));
+          return;
+        }
+        resolve(gvizToRows(response, sheetName));
+      } catch (e) {
+        reject(e);
+      }
+    };
+
+    script.onerror = function(){
+      delete window[callbackName];
+      script.remove();
+      reject(new Error(sheetName + ' yüklənmədi'));
+    };
+
+    script.src = url;
+    document.body.appendChild(script);
+  });
+}
+
+function gvizToRows(response, sheetName){
+  const table = response.table || {};
+  const cols = table.cols || [];
+  const rows = table.rows || [];
+  const headers = cols.map((c, i) => cleanText(c.label || c.id || ('COL' + i)));
+  SHEET_DEBUG.push({sheet: sheetName, headers, rowCount: rows.length});
+
+  return rows.map(r => {
+    const obj = {};
+    headers.forEach((h, i) => {
+      const cell = r.c && r.c[i] ? r.c[i] : null;
+      obj[h] = cell ? (cell.v ?? '') : '';
+      obj[h + '__f'] = cell ? (cell.f ?? '') : '';
+    });
+    return obj;
+  });
+}
+
+function headersOf(rows){ return rows.length ? Object.keys(rows[0]).filter(k => !k.endsWith('__f')) : []; }
+function valueByHeader(row, header){ return header ? row[header] : ''; }
+function findHeader(headers, tests){
+  const normalized = headers.map(h => ({h, n: norm(h)}));
+  for (const t of tests) {
+    const tn = norm(t);
+    const found = normalized.find(x => x.n === tn);
+    if (found) return found.h;
+  }
+  for (const t of tests) {
+    const tn = norm(t);
+    const found = normalized.find(x => x.n.includes(tn));
+    if (found) return found.h;
+  }
+  return null;
+}
+function findStoreHeader(headers, store, kind){
+  const aliases = {
+    ARAZ: ['araz','arazmarket','araz market'],
+    BRAVO: ['bravo'],
+    TAMSTORE: ['tamstore','tam store'],
+    RAHATMARKET: ['rahatmarket','rahat market','rahat'],
+    BAZARSTORE: ['bazarstore','bazar store'],
+    WOLTMARKET: ['woltmarket','wolt market','wolt']
+  }[store] || [store];
+  const kindWords = kind === 'price'
+    ? ['price','qiymet','qiymət','newprice','saleprice']
+    : kind === 'diff'
+      ? ['diff','difference','ferq','fərq','percent','faiz']
+      : ['name','product','productname','mehsul','məhsul','title'];
+  const hs = headers.map(h => ({h, n: norm(h)}));
+  for (const a of aliases) {
+    const an = norm(a);
+    for (const kw of kindWords) {
+      const kn = norm(kw);
+      const found = hs.find(x => x.n.includes(an) && x.n.includes(kn));
+      if (found) return found.h;
+    }
+  }
+  return null;
+}
+
+// ---- parsers ----
+function parseCatalogRows(rows, store){
+  const headers = headersOf(rows);
+  const nameH = findHeader(headers, [
+    'Product Name','Product','Name','Məhsul','Mehsul','Məhsul adı','ProductName','Title'
+  ]) || headers[0];
+  const priceH = findHeader(headers, [
+    'Price','Qiymət','Qiymet','Sale Price','New Price','Current Price','ARAZ Price'
+  ]) || headers.find(h => h !== nameH && rows.some(r => toNumber(r[h]) !== null));
+  const oldH = findHeader(headers, ['Original Price','Old Price','Əvvəlki qiymət','Evvelki qiymet','Regular Price']);
+
+  return rows.map(r => ({
+    store,
+    name: cleanText(valueByHeader(r, nameH)),
+    price: toNumber(valueByHeader(r, priceH)),
+    oldPrice: toNumber(valueByHeader(r, oldH))
+  })).filter(x => x.name && x.price !== null);
+}
+
+function parsePriceComparison(rows){
+  const headers = headersOf(rows);
+  if (!headers.length) return [];
+
+  const productH = findHeader(headers, [
+    'Product Name','Araz Product Name','Araz Name','Araz Product','Məhsul','Mehsul','Name','Product'
+  ]) || headers[0];
+  const arazPriceH = findStoreHeader(headers, 'ARAZ', 'price') || findHeader(headers, ['Araz Price','Price','Qiymət','Qiymet']) || headers[1];
+
+  const result = rows.map(row => {
+    const name = cleanText(valueByHeader(row, productH));
+    const araz = toNumber(valueByHeader(row, arazPriceH));
+    const p = { name, araz, stores: {} };
+
+    STORES_ALL.filter(s => s !== 'ARAZ').forEach(store => {
+      let nameH = findStoreHeader(headers, store, 'name');
+      let priceH = findStoreHeader(headers, store, 'price');
+      let diffH = findStoreHeader(headers, store, 'diff');
+
+      // Ordinal fallback for common layout:
+      // ArazName, ArazPrice, BravoName, BravoPrice, TamstoreName, TamstorePrice...
+      if (!priceH) {
+        const order = ['BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET'];
+        const idx = order.indexOf(store);
+        const possibleName = headers[2 + idx * 2];
+        const possiblePrice = headers[3 + idx * 2];
+        if (possiblePrice && rows.some(r => toNumber(r[possiblePrice]) !== null)) {
+          nameH = nameH || possibleName;
+          priceH = possiblePrice;
+        }
+      }
+
+      const price = toNumber(valueByHeader(row, priceH));
+      if (price !== null) {
+        p.stores[store] = {
+          name: cleanText(valueByHeader(row, nameH)) || name,
+          price,
+          diff: cleanText(valueByHeader(row, diffH)) || calcDiff(araz, price)
+        };
+      }
+    });
+
+    return p;
+  }).filter(p => p.name && p.araz !== null);
+
+  return result;
+}
+
+function buildFromCatalogs(catalogs){
+  const arazRows = catalogs.ARAZ || [];
+  const byStore = {};
+  Object.keys(catalogs).forEach(store => {
+    byStore[store] = new Map();
+    catalogs[store].forEach(r => byStore[store].set(norm(r.name), r));
+  });
+
+  return arazRows.map(arazItem => {
+    const p = { name: arazItem.name, araz: arazItem.price, stores: {} };
+    STORES_ALL.filter(s => s !== 'ARAZ').forEach(store => {
+      const m = byStore[store]?.get(norm(arazItem.name));
+      if (m && m.price !== null) {
+        p.stores[store] = { name: m.name, price: m.price, diff: calcDiff(arazItem.price, m.price) };
+      }
+    });
+    return p;
+  });
+}
+
+// ---- app load ----
+async function initApp(){
+  showProductMessage('⏳', 'Data oxunur', 'Google Sheet-dən canlı data yüklənir...');
+  setStatus('Google Sheet-dən data oxunur...');
+
+  try {
+    // First try the ready comparison sheet. This is the fastest and closest to the uploaded project.
+    const pcRows = await loadSheet(SHEET_NAMES.PRICE_COMPARISON);
+    ALL = parsePriceComparison(pcRows);
+  } catch(e) {
+    console.warn('PriceComparison oxunmadı:', e);
+    ALL = [];
+  }
+
+  // Also load store catalog sheets for the Mağaza Axtarışı tab and as fallback.
+  const storeSheetPairs = [
+    ['ARAZ', SHEET_NAMES.ARAZ],
+    ['BRAVO', SHEET_NAMES.BRAVO],
+    ['TAMSTORE', SHEET_NAMES.TAMSTORE],
+    ['RAHATMARKET', SHEET_NAMES.RAHATMARKET],
+    ['BAZARSTORE', SHEET_NAMES.BAZARSTORE],
+    ['WOLTMARKET', SHEET_NAMES.WOLTMARKET]
+  ];
+
+  const catalogResults = await Promise.allSettled(
+    storeSheetPairs.map(([store, sheet]) => loadSheet(sheet).then(rows => [store, parseCatalogRows(rows, store)]))
+  );
+  const catalogs = {};
+  catalogResults.forEach(r => {
+    if (r.status === 'fulfilled') catalogs[r.value[0]] = r.value[1];
+  });
+
+  STORE_ROWS = Object.values(catalogs).flat();
+
+  if (!ALL.length && catalogs.ARAZ) {
+    ALL = buildFromCatalogs(catalogs);
+  }
+
+  if (!ALL.length) {
+    showProductMessage('⚠️', 'Data tapılmadı', 'Sheet oxundu, amma sütun adları gözlənilən formatda deyil. Console-da SHEET_DEBUG-a baxın.');
+    console.log('SHEET_DEBUG', SHEET_DEBUG);
+    return;
+  }
+
+  applyFilters();
+  buildStoreFiltered();
 }
 
 // ---- TAB 1: Product comparison ----
@@ -369,42 +538,32 @@ function setFilter(f,btn){
   btn.classList.add('active');
   applyFilters();
 }
-
 function hasComparableStores(p){
-  return Object.values(p.stores).some(s=>s && s.price!==null && s.price!==undefined);
+  return Object.values(p.stores || {}).some(s=>s && s.price!==null && s.price!==undefined);
 }
-
 function matchesSearch(p, q){
   if(!q) return true;
   q=q.toLowerCase();
   if((p.name||'').toLowerCase().includes(q)) return true;
-  return Object.values(p.stores).some(s => (s.name||'').toLowerCase().includes(q));
+  return Object.values(p.stores || {}).some(s => (s.name||'').toLowerCase().includes(q));
 }
-
-function getProductTitle(p){
-  const names=[p.name];
-  STORES_ALL.filter(s=>s!=='ARAZ').forEach(s=>{
-    const item=p.stores[s];
-    if(item && item.name && !names.includes(item.name)) names.push(item.name);
-  });
-  return names.join(' / ');
-}
-
 function applyFilters(){
-  let r=ALL.filter(p=>hasComparableStores(p)); // müqayisəyə yararsız olanlar çıxarılır
-  if(f_search) r=r.filter(p=>matchesSearch(p, f_search));
-  // diff faizi rəqib mağazanın Araz ilə müqayisəsidir:
-  // diff '+' = rəqib Arazdan baha → Arazda UCUZ
-  // diff '-' = rəqib Arazdan ucuz → Arazda BAHA
-  if(f_filter==='cheaper') r=r.filter(p=>Object.values(p.stores).some(s=>s.diff&&String(s.diff).startsWith('+')));
-  else if(f_filter==='pricier') r=r.filter(p=>Object.values(p.stores).some(s=>s.diff&&String(s.diff).startsWith('-')));
-  else if(f_filter==='only-araz') r=r.filter(p=>!hasComparableStores(p));
-  f_filtered=r;
-  document.getElementById('statsBar').innerHTML='<b>'+r.length+'</b> məhsul mövcuddur';
-  document.getElementById('resultsTitleTxt').textContent='Nəticələr ('+r.length+')';
+  let r = ALL.filter(p => p && p.name);
+  if(f_search) r = r.filter(p=>matchesSearch(p, f_search));
+
+  if(f_filter==='cheaper') {
+    r = r.filter(p=>Object.values(p.stores || {}).some(s=>s.diff&&String(s.diff).startsWith('+')));
+  } else if(f_filter==='pricier') {
+    r = r.filter(p=>Object.values(p.stores || {}).some(s=>s.diff&&String(s.diff).startsWith('-')));
+  } else if(f_filter==='only-araz') {
+    r = r.filter(p=>!hasComparableStores(p));
+  }
+
+  f_filtered = r;
+  document.getElementById('statsBar').innerHTML='<b>'+r.length.toLocaleString()+'</b> məhsul mövcuddur';
+  document.getElementById('resultsTitleTxt').textContent='Nəticələr ('+r.length.toLocaleString()+')';
   renderProd();
 }
-
 function renderProd(){
   const list=document.getElementById('productList');
   const page=f_filtered.slice(0,(f_page+1)*PAGE);
@@ -413,11 +572,9 @@ function renderProd(){
     :page.map(p=>prodCard(p)).join('');
   document.getElementById('prodLoadMore').style.display=f_filtered.length>(f_page+1)*PAGE?'block':'none';
 }
-
 function prodMore(){ f_page++; renderProd(); }
-
 function prodCard(p){
-  const sKeys=Object.keys(p.stores);
+  const sKeys=Object.keys(p.stores || {});
   let minP=p.araz, maxP=p.araz;
   sKeys.forEach(k=>{ const pr=p.stores[k].price; if(pr<minP)minP=pr; if(pr>maxP)maxP=pr; });
 
@@ -429,11 +586,11 @@ function prodCard(p){
       let badge=cheap?'<div class="store-badge badge-cheap">Ən Ucuz</div>':dear?'<div class="store-badge badge-dear">Ən Baha</div>':'';
       return `<div class="store-pill ${cls}" style="padding-top:${badge?'20px':'11px'}">
         ${badge}<div class="sp-name">ARAZ</div>
-        <div class="sp-product-name">${p.name}</div>
-        <div class="sp-price">${p.araz.toFixed(2)} ₼</div>
+        <div class="sp-product-name">${escapeHTML(p.name)}</div>
+        <div class="sp-price">${formatPrice(p.araz)}</div>
       </div>`;
     }
-    if(!p.stores[s]) return `<div class="store-pill no-data">
+    if(!p.stores || !p.stores[s]) return `<div class="store-pill no-data">
       <div class="sp-name">${STORE_LABELS[s]||s}</div>
       <div class="sp-price dash">–</div>
     </div>`;
@@ -442,67 +599,66 @@ function prodCard(p){
     const dr=sd.price>=maxP&&sd.price>p.araz;
     let cls2=ch?'cheapest':dr?'priciest':'';
     let badge2=ch?'<div class="store-badge badge-cheap">Ən Ucuz</div>':dr?'<div class="store-badge badge-dear">Ən Baha</div>':'';
-    const lbl=STORE_LABELS[s]||s;
-    // diff '+' = rəqib baha (Araz ucuzdur) → yaşıl göstər
-    // diff '-' = rəqib ucuz (Araz bahadır) → narıncı göstər
-    const isPos=sd.diff&&sd.diff.startsWith('+');
+    const isPos=sd.diff&&String(sd.diff).startsWith('+');
     return `<div class="store-pill ${cls2}" style="padding-top:${badge2?'20px':'11px'}">
-      ${badge2}<div class="sp-name">${lbl}</div>
-      <div class="sp-product-name">${sd.name||p.name}</div>
-      <div class="sp-price">${sd.price.toFixed(2)} ₼</div>
-      ${sd.diff?`<div class="sp-diff ${isPos?'diff-neg':'diff-pos'}">${sd.diff}</div>`:''}
+      ${badge2}<div class="sp-name">${STORE_LABELS[s]||s}</div>
+      <div class="sp-product-name">${escapeHTML(sd.name||p.name)}</div>
+      <div class="sp-price">${formatPrice(sd.price)}</div>
+      ${sd.diff?`<div class="sp-diff ${isPos?'diff-neg':'diff-pos'}">${escapeHTML(sd.diff)}</div>`:''}
     </div>`;
   }).join('');
 
   return `<div class="prod-card">
-    <div class="prod-card-name">${p.name}</div>
+    <div class="prod-card-name">${escapeHTML(p.name)}</div>
     <div class="stores-row">${pills}</div>
   </div>`;
 }
 
 // ---- TAB 2: Store search ----
 let s_store='ALL', s_search='', s_page=0, s_filtered=[], s_loaded=false;
-
-function initStoreTab(){
-  if(!s_loaded){ buildStoreFiltered(); s_loaded=true; }
-}
-
+function initStoreTab(){ if(!s_loaded){ buildStoreFiltered(); s_loaded=true; } }
 function onStoreChange(){ s_store=document.getElementById('storeSelect').value; }
-
 function analyzeStore(){
   s_store=document.getElementById('storeSelect').value;
   s_search=document.getElementById('storeSearchInput').value.trim().toLowerCase();
   s_page=0;
   buildStoreFiltered();
 }
-
 function onStoreSearch(v){ s_search=v.trim().toLowerCase(); s_page=0; buildStoreFiltered(); }
-
 function buildStoreFiltered(){
   s_store=document.getElementById('storeSelect').value;
   let rows=[];
-  ALL.forEach(p=>{
-    if((s_store==='ALL'||s_store==='ARAZ') && p.araz!==null && p.araz!==undefined){
-      if(!s_search||(p.name||'').toLowerCase().includes(s_search)){
-        rows.push({name:p.name,store:'ARAZ',price:p.araz,oldPrice:null});
-      }
-    }
-    const stores=s_store==='ALL'?['BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET']:(s_store!=='ARAZ'?[s_store]:[]);
-    stores.forEach(st=>{
-      const item=p.stores[st];
-      if(item && item.price!==null && item.price!==undefined){
-        const sn=item.name||p.name;
-        if(!s_search||sn.toLowerCase().includes(s_search)||(p.name||'').toLowerCase().includes(s_search)){
-          rows.push({name:sn,store:st,price:item.price,oldPrice:null,arazName:p.name,arazPrice:p.araz});
+
+  if (STORE_ROWS.length) {
+    rows = STORE_ROWS.filter(r => {
+      if (s_store !== 'ALL' && r.store !== s_store) return false;
+      if (!s_search) return true;
+      return (r.name || '').toLowerCase().includes(s_search);
+    });
+  } else {
+    ALL.forEach(p=>{
+      if((s_store==='ALL'||s_store==='ARAZ') && p.araz!==null && p.araz!==undefined){
+        if(!s_search||(p.name||'').toLowerCase().includes(s_search)){
+          rows.push({name:p.name,store:'ARAZ',price:p.araz,oldPrice:null});
         }
       }
+      const stores=s_store==='ALL'?['BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET']:(s_store!=='ARAZ'?[s_store]:[]);
+      stores.forEach(st=>{
+        const item=p.stores && p.stores[st];
+        if(item && item.price!==null && item.price!==undefined){
+          const sn=item.name||p.name;
+          if(!s_search||sn.toLowerCase().includes(s_search)||(p.name||'').toLowerCase().includes(s_search)){
+            rows.push({name:sn,store:st,price:item.price,oldPrice:null,arazName:p.name,arazPrice:p.araz});
+          }
+        }
+      });
     });
-  });
+  }
+
   s_filtered=rows;
   document.getElementById('storeCount').textContent=rows.length.toLocaleString();
   renderStore();
 }
-
 function renderStore(){
   const list=document.getElementById('storeList');
   const page=s_filtered.slice(0,(s_page+1)*PAGE);
@@ -511,25 +667,22 @@ function renderStore(){
     :page.map(r=>storeItem(r)).join('');
   document.getElementById('storeLoadMore').style.display=s_filtered.length>(s_page+1)*PAGE?'block':'none';
 }
-
 function storeMore(){ s_page++; renderStore(); }
-
 function storeItem(r){
   const priceHtml=r.oldPrice
-    ?`<div class="sli-prices"><span class="sli-old-price">${r.oldPrice.toFixed(2)} ₼</span><div class="sli-new-price">${r.price.toFixed(2)} ₼</div></div>`
-    :`<div class="sli-prices"><div class="sli-only-price">${r.price.toFixed(2)} ₼</div></div>`;
+    ?`<div class="sli-prices"><span class="sli-old-price">${formatPrice(r.oldPrice)}</span><div class="sli-new-price">${formatPrice(r.price)}</div></div>`
+    :`<div class="sli-prices"><div class="sli-only-price">${formatPrice(r.price)}</div></div>`;
   return `<div class="store-list-item">
-    <div class="sli-name">${r.name}</div>
-    <div class="sli-store">${r.store}</div>
+    <div class="sli-name">${escapeHTML(r.name)}</div>
+    <div class="sli-store">${STORE_LABELS[r.store] || r.store}</div>
     ${priceHtml}
   </div>`;
 }
-
 function downloadExcel(tab){
   let rows,hdr;
   if(tab==='prod'){
     hdr=['Məhsul','ARAZ','BRAVO','TAMSTORE','RAHATMARKET','BAZARSTORE','WOLTMARKET','BRAVO Fərq','TAMSTORE Fərq','RAHATMARKET Fərq','BAZARSTORE Fərq','WOLTMARKET Fərq'];
-    rows=f_filtered.slice(0,5000).map(p=>[p.name,p.araz,p.stores.BRAVO?.price??'',p.stores.TAMSTORE?.price??'',p.stores.RAHATMARKET?.price??'',p.stores.BAZARSTORE?.price??'',p.stores.WOLTMARKET?.price??'',p.stores.BRAVO?.diff??'',p.stores.TAMSTORE?.diff??'',p.stores.RAHATMARKET?.diff??'',p.stores.BAZARSTORE?.diff??'',p.stores.WOLTMARKET?.diff??'']);
+    rows=f_filtered.slice(0,5000).map(p=>[p.name,p.araz,p.stores?.BRAVO?.price??'',p.stores?.TAMSTORE?.price??'',p.stores?.RAHATMARKET?.price??'',p.stores?.BAZARSTORE?.price??'',p.stores?.WOLTMARKET?.price??'',p.stores?.BRAVO?.diff??'',p.stores?.TAMSTORE?.diff??'',p.stores?.RAHATMARKET?.diff??'',p.stores?.BAZARSTORE?.diff??'',p.stores?.WOLTMARKET?.diff??'']);
   } else {
     hdr=['Məhsul','Mağaza','Qiymət','Köhnə Qiymət'];
     rows=s_filtered.slice(0,5000).map(r=>[r.name,r.store,r.price,r.oldPrice??'']);
@@ -539,8 +692,7 @@ function downloadExcel(tab){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='export.csv';a.click();
 }
 
-// Init
-loadSheetData();
+initApp();
 </script>
 </body>
 </html>
