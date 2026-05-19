@@ -7,20 +7,79 @@
   <title>Araz Məhsullar</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #f3f4f6;
       margin: 0;
       padding: 20px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     h1 {
-      margin-bottom: 5px;
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input {
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      min-width: 230px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #444;
     }
 
     .status {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       color: #555;
+      font-size: 14px;
+    }
+
+    .error {
+      display: none;
+      background: #ffecec;
+      color: #c00000;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 14px;
     }
 
     .products {
@@ -31,20 +90,21 @@
 
     .card {
       background: white;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      min-height: 175px;
     }
 
     .product-name {
       font-size: 16px;
       font-weight: bold;
-      margin-bottom: 12px;
       line-height: 1.4;
+      margin-bottom: 14px;
     }
 
     .price {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: bold;
       color: #e30613;
       margin-bottom: 6px;
@@ -53,196 +113,263 @@
     .old-price {
       color: #777;
       text-decoration: line-through;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      font-size: 15px;
     }
 
     .discount {
       display: inline-block;
       background: #e30613;
       color: white;
-      padding: 5px 8px;
-      border-radius: 8px;
+      padding: 6px 9px;
+      border-radius: 999px;
       font-size: 13px;
       font-weight: bold;
     }
 
-    .error {
-      display: none;
-      background: #ffecec;
-      color: #c00;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
+    .empty {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      color: #555;
     }
 
-    button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      background: #222;
-      color: white;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
+    @media (max-width: 600px) {
+      body {
+        padding: 14px;
+      }
 
-    button:hover {
-      background: #444;
+      h1 {
+        font-size: 23px;
+      }
+
+      input,
+      button {
+        width: 100%;
+      }
+
+      .actions {
+        width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
-  <h1>Araz Məhsullar</h1>
-  <div class="status" id="statusText">Yüklənir...</div>
+  <div class="container">
+    <div class="header">
+      <h1>Araz Məhsullar</h1>
 
-  <button onclick="reloadProducts()">Yenilə</button>
+      <div class="actions">
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="Məhsul axtar..."
+          oninput="filterProducts()"
+        />
 
-  <div class="error" id="errorBox"></div>
+        <button onclick="reloadProducts()">
+          Yenilə
+        </button>
+      </div>
+    </div>
 
-  <div class="products" id="productsContainer"></div>
+    <div class="status" id="statusText">Yüklənir...</div>
 
- <script>
-  const SHEET_ID = "1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU";
-  const GID = "0";
+    <div class="error" id="errorBox"></div>
 
-  const productsContainer = document.getElementById("productsContainer");
-  const statusText = document.getElementById("statusText");
-  const errorBox = document.getElementById("errorBox");
+    <div class="products" id="productsContainer"></div>
+  </div>
 
-  window.google = {
-    visualization: {
-      Query: {
-        setResponse: function (response) {
-          handleSheetResponse(response);
+  <script>
+    const SHEET_URL =
+      "https://docs.google.com/spreadsheets/d/1xgx2ShmS87dpcq-3rdkaw4UpKxqowhvN7-aHtXUa2oU/gviz/tq?tqx=out:json&gid=0";
+
+    const productsContainer = document.getElementById("productsContainer");
+    const statusText = document.getElementById("statusText");
+    const errorBox = document.getElementById("errorBox");
+    const searchInput = document.getElementById("searchInput");
+
+    let allProducts = [];
+
+    window.google = {
+      visualization: {
+        Query: {
+          setResponse: function (response) {
+            handleSheetResponse(response);
+          }
         }
       }
-    }
-  };
-
-  function loadProducts() {
-    statusText.textContent = "Google Sheet-dən oxunur...";
-    errorBox.style.display = "none";
-    errorBox.textContent = "";
-
-    const oldScript = document.getElementById("sheetScript");
-
-    if (oldScript) {
-      oldScript.remove();
-    }
-
-    const script = document.createElement("script");
-    script.id = "sheetScript";
-
-    script.src =
-      "https://docs.google.com/spreadsheets/d/" +
-      SHEET_ID +
-      "/gviz/tq?tqx=out:json&gid=" +
-      GID;
-
-    script.onerror = function () {
-      showError("Google Sheet oxunmadı. Link browser-də açılırsa, səhifəni yenilə və ya Live Server-i restart et.");
     };
 
-    document.body.appendChild(script);
-  }
+    function loadProducts() {
+      hideError();
+      statusText.textContent = "Google Sheet-dən data oxunur...";
 
-  function handleSheetResponse(response) {
-    try {
-      if (!response || response.status !== "ok") {
-        showError("Google Sheet cavabında xəta var.");
+      const oldScript = document.getElementById("sheetScript");
+
+      if (oldScript) {
+        oldScript.remove();
+      }
+
+      const script = document.createElement("script");
+      script.id = "sheetScript";
+      script.src = SHEET_URL + "&cacheBust=" + Date.now();
+
+      script.onerror = function () {
+        showError("Google Sheet oxunmadı. Bu kompüter/şəbəkə Google Sheet request-ini bloklaya bilər.");
+        statusText.textContent = "Data oxunmadı.";
+      };
+
+      document.body.appendChild(script);
+    }
+
+    function handleSheetResponse(response) {
+      try {
+        if (!response || response.status !== "ok") {
+          showError("Google Sheet cavabında xəta var.");
+          statusText.textContent = "Data oxunmadı.";
+          return;
+        }
+
+        const rows = response.table.rows || [];
+
+        allProducts = rows
+          .map(row => {
+            return {
+              productName: row.c[0] ? row.c[0].v : "",
+              price: row.c[1] ? row.c[1].v : "",
+              priceFormatted: row.c[1] ? row.c[1].f : "",
+              originalPrice: row.c[2] ? row.c[2].v : "",
+              originalPriceFormatted: row.c[2] ? row.c[2].f : ""
+            };
+          })
+          .filter(product => product.productName);
+
+        renderProducts(allProducts);
+
+        statusText.textContent = "Məhsul sayı: " + allProducts.length;
+      } catch (error) {
+        console.error(error);
+        showError(error.message);
+        statusText.textContent = "Data oxunmadı.";
+      }
+    }
+
+    function renderProducts(products) {
+      productsContainer.innerHTML = "";
+
+      if (!products.length) {
+        productsContainer.innerHTML =
+          '<div class="empty">Məhsul tapılmadı.</div>';
         return;
       }
 
-      const rows = response.table.rows;
+      products.forEach(product => {
+        const price = toNumber(product.price);
+        const originalPrice = toNumber(product.originalPrice);
 
-      const products = rows
-        .map(row => {
-          return {
-            name: row.c[0] ? row.c[0].v : "",
-            price: row.c[1] ? row.c[1].v : "",
-            priceFormatted: row.c[1] ? row.c[1].f : "",
-            originalPrice: row.c[2] ? row.c[2].v : "",
-            originalPriceFormatted: row.c[2] ? row.c[2].f : ""
-          };
-        })
-        .filter(product => product.name);
+        let discountHtml = "";
 
-      renderProducts(products);
+        if (price > 0 && originalPrice > 0 && originalPrice > price) {
+          const discount = Math.round(
+            ((originalPrice - price) / originalPrice) * 100
+          );
 
-      statusText.textContent = "Məhsul sayı: " + products.length;
-
-      localStorage.setItem("products", JSON.stringify(products));
-      localStorage.setItem(
-        "productsDate",
-        new Date().toISOString().split("T")[0]
-      );
-    } catch (error) {
-      console.error(error);
-      showError(error.message);
-    }
-  }
-
-  function renderProducts(products) {
-    productsContainer.innerHTML = "";
-
-    products.forEach(product => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      let discountHtml = "";
-
-      if (product.price && product.originalPrice) {
-        const discount = Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) * 100
-        );
-
-        if (discount > 0) {
           discountHtml = `<div class="discount">-${discount}% endirim</div>`;
         }
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <div class="product-name">${escapeHTML(product.productName)}</div>
+
+          <div class="price">
+            ${escapeHTML(product.priceFormatted || formatPrice(price))}
+          </div>
+
+          ${
+            originalPrice > 0
+              ? `<div class="old-price">${escapeHTML(product.originalPriceFormatted || formatPrice(originalPrice))}</div>`
+              : ""
+          }
+
+          ${discountHtml}
+        `;
+
+        productsContainer.appendChild(card);
+      });
+    }
+
+    function filterProducts() {
+      const searchText = searchInput.value.toLowerCase().trim();
+
+      if (!searchText) {
+        renderProducts(allProducts);
+        statusText.textContent = "Məhsul sayı: " + allProducts.length;
+        return;
       }
 
-      card.innerHTML = `
-        <div class="product-name">${escapeHTML(product.name)}</div>
-        <div class="price">${escapeHTML(product.priceFormatted || product.price + " ₼")}</div>
-        <div class="old-price">${escapeHTML(product.originalPriceFormatted || product.originalPrice + " ₼")}</div>
-        ${discountHtml}
-      `;
+      const filtered = allProducts.filter(product =>
+        product.productName.toLowerCase().includes(searchText)
+      );
 
-      productsContainer.appendChild(card);
-    });
-  }
-
-  function reloadProducts() {
-    localStorage.removeItem("products");
-    localStorage.removeItem("productsDate");
-    loadProducts();
-  }
-
-  function showError(message) {
-    console.error(message);
-
-    errorBox.style.display = "block";
-    errorBox.textContent = message;
-    statusText.textContent = "Data oxunmadı.";
-
-    const cachedProducts = localStorage.getItem("products");
-
-    if (cachedProducts) {
-      renderProducts(JSON.parse(cachedProducts));
-      statusText.textContent = "Xəta oldu, əvvəlki data göstərildi.";
+      renderProducts(filtered);
+      statusText.textContent = "Axtarış nəticəsi: " + filtered.length + " məhsul";
     }
-  }
 
-  function escapeHTML(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+    function reloadProducts() {
+      loadProducts();
+    }
 
-  loadProducts();
-</script>
+    function toNumber(value) {
+      if (typeof value === "number") {
+        return value;
+      }
+
+      if (!value) {
+        return 0;
+      }
+
+      return Number(
+        String(value)
+          .replace("₼", "")
+          .replace(",", ".")
+          .replace(/[^\d.]/g, "")
+      ) || 0;
+    }
+
+    function formatPrice(value) {
+      const number = toNumber(value);
+
+      if (!number) {
+        return "";
+      }
+
+      return number.toFixed(2) + " ₼";
+    }
+
+    function showError(message) {
+      errorBox.style.display = "block";
+      errorBox.textContent = message;
+    }
+
+    function hideError() {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+    }
+
+    function escapeHTML(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadProducts();
+  </script>
 </body>
 </html>
