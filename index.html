@@ -898,19 +898,36 @@ function applyProductFilters() {
     const matchesSearch = !productSearch || item.name.toLowerCase().includes(productSearch);
     if (!matchesSearch) return false;
 
+    const arazPrice = Number(item.araz || 0);
+
     const competitorPrices = Object.values(item.stores || {})
       .map(s => Number(s.price))
       .filter(p => p > 0);
 
-    if (activeFilter === "all") return true;
-    if (activeFilter === "only-araz") return competitorPrices.length === 0;
-    if (!competitorPrices.length) return false;
+    /*
+      Əsas qayda:
+      "Hamısı" hissəsində tək qiymətli məhsul göstərilmir.
+      Məhsulda mütləq Araz qiyməti olmalıdır və ən azı 1 rəqib mağazada da qiymət olmalıdır.
+      Yəni ümumilikdə minimum 2 mağaza qiyməti: Araz + rəqib.
+    */
+    const hasAraz = arazPrice > 0;
+    const hasAtLeastOneCompetitor = competitorPrices.length >= 1;
+
+    if (activeFilter === "all") {
+      return hasAraz && hasAtLeastOneCompetitor;
+    }
+
+    if (activeFilter === "only-araz") {
+      return hasAraz && competitorPrices.length === 0;
+    }
+
+    if (!hasAraz || !hasAtLeastOneCompetitor) return false;
 
     const minCompetitor = Math.min(...competitorPrices);
     const maxCompetitor = Math.max(...competitorPrices);
 
-    if (activeFilter === "cheaper") return Number(item.araz) < minCompetitor;
-    if (activeFilter === "pricier") return Number(item.araz) > maxCompetitor;
+    if (activeFilter === "cheaper") return arazPrice < minCompetitor;
+    if (activeFilter === "pricier") return arazPrice > maxCompetitor;
 
     return true;
   });
@@ -1014,8 +1031,17 @@ function prodMore() {
 }
 
 function updateStats() {
+  const comparableCount = ALL.filter(item => {
+    const arazPrice = Number(item.araz || 0);
+    const competitorCount = Object.values(item.stores || {})
+      .map(s => Number(s.price))
+      .filter(p => p > 0).length;
+
+    return arazPrice > 0 && competitorCount >= 1;
+  }).length;
+
   document.getElementById("statsBar").innerHTML =
-    `<b>${productFiltered.length}</b> məhsul göstərilir / Araz üzrə <b>${ALL.length}</b> məhsul / mağaza datası <b>${storeProducts.length}</b> sətir`;
+    `<b>${productFiltered.length}</b> məhsul göstərilir / müqayisə edilə bilən <b>${comparableCount}</b> məhsul / mağaza datası <b>${storeProducts.length}</b> sətir`;
 }
 
 function onStoreChange() {
